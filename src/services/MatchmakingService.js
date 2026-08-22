@@ -1,9 +1,6 @@
-import { delay } from '../utils/helpers.js';
-
 /**
- * Matchmaking & Real-time Multiplayer Service
- * Handles queue management, player discovery via BroadcastChannel / WebRTC / WebSockets,
- * and realistic VK online player fallback.
+ * Real-time Multiplayer Matchmaking Service
+ * Handles search queue and synchronization exclusively for real live players.
  */
 export class MatchmakingService {
   constructor() {
@@ -13,7 +10,7 @@ export class MatchmakingService {
     this.isHost = false;
     this.currentUser = null;
     this.opponent = null;
-    this.searchTimer = null;
+    this.searchInterval = null;
     this.onMatchFound = null;
     this.onOpponentAction = null;
     this.onOpponentDisconnect = null;
@@ -24,7 +21,7 @@ export class MatchmakingService {
   initChannel() {
     if (typeof BroadcastChannel !== 'undefined') {
       try {
-        this.channel = new BroadcastChannel('durak_online_matchmaking');
+        this.channel = new BroadcastChannel('durak_online_real_matchmaking');
         this.channel.onmessage = (e) => this.handleChannelMessage(e.data);
       } catch (err) {
         console.warn('BroadcastChannel not supported', err);
@@ -35,17 +32,18 @@ export class MatchmakingService {
   handleChannelMessage(msg) {
     if (!msg || !msg.type) return;
 
-    // Discovery: Someone is looking for a match
+    // Discovery: Another real player is looking for a match
     if (msg.type === 'LOOKING_FOR_MATCH' && this.status === 'SEARCHING') {
-      // If we have different user IDs
-      if (msg.user && msg.user.id !== this.currentUser?.id) {
-        const roomId = `room_${Date.now()}_${Math.random()}`;
+      // Must be a different real user
+      if (msg.user && String(msg.user.id) !== String(this.currentUser?.id)) {
+        const roomId = `room_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
         this.status = 'FOUND';
         this.roomId = roomId;
         this.isHost = true;
         this.opponent = msg.user;
+        this.stopSearchBroadcast();
 
-        // Send MATCH_ACCEPT to join room
+        // Send MATCH_ACCEPT to the other player
         this.sendMessage({
           type: 'MATCH_ACCEPT',
           targetUserId: msg.user.id,
@@ -54,28 +52,29 @@ export class MatchmakingService {
         });
 
         if (this.onMatchFound) {
-          this.onMatchFound(this.opponent, true, roomId);
+          this.onMatchFound(this.opponent, true, roomId, false);
         }
       }
     }
 
-    // A match was accepted by a host
+    // A match was accepted by the hosting real player
     else if (msg.type === 'MATCH_ACCEPT' && this.status === 'SEARCHING') {
-      if (msg.targetUserId === this.currentUser?.id) {
+      if (String(msg.targetUserId) === String(this.currentUser?.id)) {
         this.status = 'FOUND';
         this.roomId = msg.roomId;
         this.isHost = false;
         this.opponent = msg.hostUser;
+        this.stopSearchBroadcast();
 
         if (this.onMatchFound) {
-          this.onMatchFound(this.opponent, false, msg.roomId);
+          this.onMatchFound(this.opponent, false, msg.roomId, false);
         }
       }
     }
 
-    // In-game remote actions
+    // In-game remote actions from real opponent
     else if (msg.type === 'GAME_ACTION' && msg.roomId === this.roomId) {
-      if (msg.senderId !== this.currentUser?.id && this.onOpponentAction) {
+      if (String(msg.senderId) !== String(this.currentUser?.id) && this.onOpponentAction) {
         this.onOpponentAction(msg.action);
       }
     }
@@ -106,46 +105,47 @@ export class MatchmakingService {
   }
 
   /**
-   * Start searching for an opponent
+   * Start searching exclusively for real live players
    */
-  async startSearch(user, onMatchFoundCallback) {
+  startSearch(user, onMatchFoundCallback) {
     this.currentUser = user;
     this.status = 'SEARCHING';
     this.onMatchFound = onMatchFoundCallback;
     this.opponent = null;
     this.roomId = null;
 
-    // Broadcast search message
-    this.sendMessage({
-      type: 'LOOKING_FOR_MATCH',
-      user: this.currentUser
-    });
-
-    // If no real tab connects within 3-4 seconds, pair with a simulated active VK player
-    this.searchTimer = setTimeout(() => {
+    const broadcastSearch = () => {
       if (this.status === 'SEARCHING') {
-        const simulatedOpponent = this.getRandomOnlineVKPlayer();
-        this.status = 'FOUND';
-        this.opponent = simulatedOpponent;
-        this.roomId = `room_vk_${Date.now()}`;
-        this.isHost = true;
-
-        if (this.onMatchFound) {
-          this.onMatchFound(this.opponent, true, this.roomId, true);
-        }
+        this.sendMessage({
+          type: 'LOOKING_FOR_MATCH',
+          user: this.currentUser
+        });
       }
-    }, 3200);
+    };
+
+    // Initial broadcast
+    broadcastSearch();
+
+    // Periodic broadcast while searching
+    if (this.searchInterval) clearInterval(this.searchInterval);
+    this.searchInterval = setInterval(broadcastSearch, 1800);
+  }
+
+  stopSearchBroadcast() {
+    if (this.searchInterval) {
+      clearInterval(this.searchInterval);
+      this.searchInterval = null;
+    }
   }
 
   /**
    * Cancel search queue
    */
   cancelSearch() {
-    if (this.searchTimer) {
-      clearTimeout(this.searchTimer);
-      this.searchTimer = null;
-    }
+    this.stopSearchBroadcast();
     this.status = 'IDLE';
+    this.opponent = null;
+    this.roomId = null;
   }
 
   leaveMatch() {
@@ -156,20 +156,10 @@ export class MatchmakingService {
         senderId: this.currentUser?.id
       });
     }
+    this.stopSearchBroadcast();
     this.status = 'IDLE';
     this.roomId = null;
     this.opponent = null;
-  }
-
-  getRandomOnlineVKPlayer() {
-    const vkOpponents = [
-      { id: 'vk_1', name: 'Дмитрий Соколов', firstName: 'Дмитрий', photo: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=80', rating: 1350 },
-      { id: 'vk_2', name: 'Анастасия Смирнова', firstName: 'Анастасия', photo: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop&q=80', rating: 1480 },
-      { id: 'vk_3', name: 'Артем Ковалев', firstName: 'Артем', photo: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=100&auto=format&fit=crop&q=80', rating: 1290 },
-      { id: 'vk_4', name: 'Мария Лебедева', firstName: 'Мария', photo: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=100&auto=format&fit=crop&q=80', rating: 1520 },
-      { id: 'vk_5', name: 'Илья Кузнецов', firstName: 'Илья', photo: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80', rating: 1410 }
-    ];
-    return vkOpponents[Math.floor(Math.random() * vkOpponents.length)];
   }
 }
 
