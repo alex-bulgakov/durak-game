@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <title>Подкидной Дурак — Онлайн Игра</title>
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- Header -->
+    <header class="game-header">
+      <div class="brand">
+        <h1 class="game-title">ДУРАК</h1>
+        <span class="rules-badge">Подкидной 36 карт</span>
+      </div>
+
+      <div id="statusBadge" class="status-badge status-player">
+        Загрузка игры...
+      </div>
+
+      <div class="header-controls">
+        <button id="btnSoundToggle" class="btn btn-secondary" title="Включить / выключить звук">
+          <span class="icon">🔊</span> Звук: Вкл
+        </button>
+        <button id="btnNewGame" class="btn btn-primary" title="Начать новую партию">
+          <span>🔄</span> Новая игра
+        </button>
+      </div>
+    </header>
+
+    <!-- Table Arena -->
+    <main class="game-table">
+      <!-- Opponent / Bot Zone -->
+      <section class="player-zone opponent-zone">
+        <div class="player-info-tag">
+          <span>🤖 Бот</span>
+          <span id="botCardCount" class="card-count-badge">6 карт</span>
+        </div>
+        <div id="botHand" class="cards-row bot-cards-row"></div>
+      </section>
+
+      <!-- Center Area: Deck, Table, Discard -->
+      <section class="table-center">
+        <!-- Deck Area -->
+        <div id="deckContainer" class="side-deck-area"></div>
+
+        <!-- Battlefield (Pairs) -->
+        <div class="battlefield">
+          <div id="tablePairs" class="table-pairs-container"></div>
+        </div>
+
+        <!-- Discard Pile (Бито) -->
+        <div id="discardContainer" class="side-discard-area"></div>
+      </section>
+
+      <!-- Player Zone -->
+      <section class="player-zone user-zone">
+        <!-- Action Buttons Bar -->
+        <div class="action-bar">
+          <button id="btnPass" class="btn btn-action btn-pass" style="display: none;">
+            Бито
+          </button>
+          <button id="btnTake" class="btn btn-action btn-take" style="display: none;">
+            Взять карты
+          </button>
+        </div>
+
+        <div id="playerHand" class="cards-row player-cards-row"></div>
+
+        <div class="player-info-tag" style="margin-top: 6px; margin-bottom: 0;">
+          <span>👤 Вы</span>
+          <span id="playerCardCount" class="card-count-badge">6 карт</span>
+        </div>
+      </section>
+    </main>
+
+    <!-- Event Log -->
+    <footer class="log-drawer">
+      <span class="log-title">События:</span>
+      <div id="gameLog" class="log-items-ticker"></div>
+    </footer>
+
+    <!-- Game Over Modal -->
+    <div id="gameOverModal" class="modal-overlay">
+      <div class="modal-card">
+        <div id="gameOverIcon" class="modal-icon">🏆</div>
+        <h2 id="gameOverTitle" class="modal-title">Игра окончена</h2>
+        <p id="gameOverDesc" class="modal-desc">Результаты партии...</p>
+        <button id="btnRestartModal" class="btn btn-primary btn-action">
+          Сыграть еще раз
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
