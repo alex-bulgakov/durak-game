@@ -147,7 +147,6 @@ export class CardGenerator {
       pips.push(makePip(right, 200, true));
     } else if (num === 7) {
       pips.push(makePip(left, 60));
-      pips.push(right, 60);
       pips.push(makePip(right, 60));
       pips.push(makePip(center, 95));
       pips.push(makePip(left, 130));
