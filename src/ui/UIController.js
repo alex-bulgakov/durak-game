@@ -54,7 +54,7 @@ export class UIController {
     };
 
     this.state.onGameOver = async (result) => {
-      await leaderboardService.recordMatchResult(result, this.state.playerProfile.id);
+      await leaderboardService.recordMatchResult(result, this.state.playerProfile.id, this.state.playerProfile);
       setTimeout(() => {
         vkService.showInterstitialAd();
       }, 1200);

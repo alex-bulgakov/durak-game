@@ -1,12 +1,13 @@
 import vkBridge from '@vkontakte/vk-bridge';
 
 /**
- * Leaderboard & Player Stats Service
- * Manages ratings, win streaks, match history and leaderboard rankings
+ * Real Players Leaderboard Service
+ * Stores and manages only real players who played the game.
  */
 export class LeaderboardService {
   constructor() {
     this.statsKey = 'durak_player_stats_v1';
+    this.allPlayersKey = 'durak_all_real_players_v1';
     this.stats = {
       rating: 1000,
       wins: 0,
@@ -19,7 +20,7 @@ export class LeaderboardService {
   }
 
   async loadStats(userId) {
-    // 1. Try to load from VK Storage if available
+    // 1. Try VK Storage
     try {
       const response = await vkBridge.send('VKWebAppStorageGet', {
         keys: [this.statsKey]
@@ -29,9 +30,7 @@ export class LeaderboardService {
         this.stats = { ...this.stats, ...parsed };
         return this.stats;
       }
-    } catch (e) {
-      // Fallback to localStorage
-    }
+    } catch (e) {}
 
     // 2. Fallback to localStorage
     try {
@@ -46,25 +45,69 @@ export class LeaderboardService {
     return this.stats;
   }
 
-  async saveStats(userId) {
+  async saveStats(userId, playerProfile = null) {
     const jsonStr = JSON.stringify(this.stats);
 
-    // 1. Save to localStorage
+    // Save individual stats
     try {
       localStorage.setItem(`${this.statsKey}_${userId || 'guest'}`, jsonStr);
     } catch (e) {}
 
-    // 2. Save to VK Storage
     try {
       await vkBridge.send('VKWebAppStorageSet', {
         key: this.statsKey,
         value: jsonStr
       });
     } catch (e) {}
+
+    // Update in real players registry
+    if (playerProfile) {
+      this.updateRealPlayerRegistry(playerProfile);
+    }
   }
 
-  async recordMatchResult(result, userId) {
-    // result: 'WIN' | 'LOSS' | 'DRAW'
+  getRealPlayersList() {
+    try {
+      const raw = localStorage.getItem(this.allPlayersKey);
+      if (raw) {
+        const list = JSON.parse(raw);
+        if (Array.isArray(list)) return list;
+      }
+    } catch (e) {}
+    return [];
+  }
+
+  saveRealPlayersList(list) {
+    try {
+      localStorage.setItem(this.allPlayersKey, JSON.stringify(list));
+    } catch (e) {}
+  }
+
+  updateRealPlayerRegistry(playerProfile) {
+    if (!playerProfile || !playerProfile.id) return;
+    const list = this.getRealPlayersList();
+    const existingIndex = list.findIndex(p => String(p.id) === String(playerProfile.id));
+
+    const playerEntry = {
+      id: playerProfile.id,
+      name: playerProfile.name || 'Игрок VK',
+      photo: playerProfile.photo || 'https://vk.com/images/camera_200.png',
+      rating: this.stats.rating,
+      wins: this.stats.wins,
+      streak: this.stats.currentStreak,
+      totalGames: this.stats.totalGames
+    };
+
+    if (existingIndex >= 0) {
+      list[existingIndex] = playerEntry;
+    } else {
+      list.push(playerEntry);
+    }
+
+    this.saveRealPlayersList(list);
+  }
+
+  async recordMatchResult(result, userId, playerProfile = null) {
     this.stats.totalGames++;
 
     if (result === 'WIN') {
@@ -83,7 +126,7 @@ export class LeaderboardService {
       this.stats.rating += 5;
     }
 
-    await this.saveStats(userId);
+    await this.saveStats(userId, playerProfile);
     return this.stats;
   }
 
@@ -93,22 +136,10 @@ export class LeaderboardService {
   }
 
   /**
-   * Generates a realistic Leaderboard list with the current player positioned correctly
+   * Returns Leaderboard containing ONLY real players
    */
   getLeaderboard(currentUser) {
-    const defaultLeaders = [
-      { id: '101', name: 'Александр Смирнов', photo: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=80', rating: 2450, wins: 142, streak: 8 },
-      { id: '102', name: 'Елена Кузнецова', photo: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop&q=80', rating: 2280, wins: 118, streak: 5 },
-      { id: '103', name: 'Дмитрий Волков', photo: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=100&auto=format&fit=crop&q=80', rating: 2110, wins: 95, streak: 4 },
-      { id: '104', name: 'Мария Соколова', photo: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=100&auto=format&fit=crop&q=80', rating: 1950, wins: 81, streak: 3 },
-      { id: '105', name: 'Максим Морозов', photo: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80', rating: 1820, wins: 64, streak: 2 },
-      { id: '106', name: 'Анастасия Попова', photo: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&auto=format&fit=crop&q=80', rating: 1690, wins: 52, streak: 3 },
-      { id: '107', name: 'Сергей Васильев', photo: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&auto=format&fit=crop&q=80', rating: 1540, wins: 41, streak: 1 },
-      { id: '108', name: 'Ольга Новикова', photo: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80', rating: 1410, wins: 33, streak: 2 },
-      { id: '109', name: 'Артем Федоров', photo: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=100&auto=format&fit=crop&q=80', rating: 1250, wins: 22, streak: 1 },
-      { id: '110', name: 'Виктория Михайлова', photo: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=100&auto=format&fit=crop&q=80', rating: 1100, wins: 15, streak: 0 }
-    ];
-
+    // Current player entry
     const playerEntry = {
       id: currentUser?.id || 'me',
       name: currentUser?.name || 'Вы',
@@ -116,13 +147,17 @@ export class LeaderboardService {
       rating: this.stats.rating,
       wins: this.stats.wins,
       streak: this.stats.currentStreak,
+      totalGames: this.stats.totalGames,
       isCurrentUser: true
     };
 
-    // Merge and sort
-    const all = [...defaultLeaders, playerEntry].sort((a, b) => b.rating - a.rating);
+    // Real other players who joined
+    const realPlayers = this.getRealPlayersList().filter(
+      p => String(p.id) !== String(playerEntry.id)
+    );
 
-    // Assign rank
+    const all = [playerEntry, ...realPlayers].sort((a, b) => b.rating - a.rating);
+
     return all.map((entry, index) => ({
       ...entry,
       rank: index + 1
