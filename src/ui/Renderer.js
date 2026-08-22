@@ -160,16 +160,20 @@ export class Renderer {
 
     let cardsHtml = '';
     const mid = (count - 1) / 2;
-    const angleStep = count <= 6 ? 2.5 : Math.max(1.2, 16 / Math.max(1, count));
-    const overlap = count <= 4 ? 8 : (count <= 6 ? 20 : Math.min(45, Math.max(18, 240 / Math.max(1, count))));
+    const cardWidth = 82;
+    const stepX = count <= 1 ? 0 : Math.min(48, Math.max(26, 420 / Math.max(1, count)));
+    const overlap = count <= 1 ? 0 : Math.max(15, cardWidth - stepX);
+
+    const totalAngle = count <= 1 ? 0 : Math.min(22, (count - 1) * 3.8);
+    const angleStep = count <= 1 ? 0 : totalAngle / Math.max(1, count - 1);
 
     state.botHand.forEach((card, idx) => {
       const rot = ((idx - mid) * -angleStep).toFixed(2);
-      const y = (Math.abs(idx - mid) * 1.5).toFixed(1);
+      const y = (Math.pow(Math.abs(idx - mid) / Math.max(1, mid), 1.5) * 8).toFixed(1);
 
       cardsHtml += `
         <div class="card-item bot-card" 
-             style="--card-index: ${idx}; margin-left: ${idx === 0 ? 0 : -overlap}px; transform: rotate(${rot}deg) translateY(${y}px); transform-origin: center top;">
+             style="--card-index: ${idx}; margin-left: ${idx === 0 ? 0 : -overlap}px; transform: rotate(${rot}deg) translateY(${y}px); transform-origin: 50% -40%;">
           ${CardGenerator.generateCardBackSvg()}
         </div>
       `;
@@ -188,7 +192,7 @@ export class Renderer {
       this.elements.tablePairs.innerHTML = `
         <div class="table-empty-hint">
           <span class="hint-icon">🃏</span>
-          <span class="hint-text">${state.attacker === PLAYERS.PLAYER ? 'Сделайте ход картой' : 'Ожидание хода соперника'}</span>
+          <span>Сделайте ход картой</span>
         </div>
       `;
       return;
@@ -196,8 +200,8 @@ export class Renderer {
 
     let pairsHtml = '';
     state.tablePairs.forEach((pair, idx) => {
-      const isUnbitten = !pair.defense;
-      const canBeDefendedBySelected = selectedPlayerCard && isUnbitten && state.defender === PLAYERS.PLAYER &&
+      const canBeDefendedBySelected = selectedPlayerCard && 
+        !pair.defense && 
         Rules.canDefend(pair.attack, selectedPlayerCard, state.deck.trumpSuit);
 
       pairsHtml += `
@@ -227,9 +231,15 @@ export class Renderer {
 
     let cardsHtml = '';
     const mid = (count - 1) / 2;
-    // Dynamic fan angle and spacing
-    const angleStep = count <= 5 ? 4.5 : (count <= 8 ? 3.5 : Math.max(2, 26 / Math.max(1, count)));
-    const overlap = count <= 4 ? 8 : (count <= 6 ? 22 : Math.min(48, Math.max(18, 280 / Math.max(1, count))));
+
+    // Wide, natural card spread (50-65px visible per card)
+    const cardWidth = 82;
+    const stepX = count <= 1 ? 0 : Math.min(62, Math.max(38, 540 / Math.max(1, count)));
+    const overlap = count <= 1 ? 0 : Math.max(12, cardWidth - stepX);
+
+    // Dynamic fan arc: 6 cards = 26 deg (-13 to +13 deg)
+    const totalAngle = count <= 1 ? 0 : Math.min(34, (count - 1) * 5.5);
+    const angleStep = count <= 1 ? 0 : totalAngle / Math.max(1, count - 1);
 
     state.playerHand.forEach((card, idx) => {
       const isSelected = selectedPlayerCard && selectedPlayerCard.id === card.id;
@@ -244,7 +254,7 @@ export class Renderer {
       }
 
       const rot = ((idx - mid) * angleStep).toFixed(2);
-      const yOffset = (Math.pow(Math.abs(idx - mid), 1.25) * 2.2).toFixed(1);
+      const yOffset = (Math.pow(Math.abs(idx - mid) / Math.max(1, mid), 1.5) * 14).toFixed(1);
 
       cardsHtml += `
         <div class="card-item player-card ${isSelected ? 'selected' : ''} ${isPlayable ? 'playable' : ''} ${card.isTrump ? 'is-trump' : ''}" 
