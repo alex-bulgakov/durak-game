@@ -1,4 +1,4 @@
-import { SUITS } from '../utils/helpers.js';
+import { SUITS, RANK_NAMES_RU, SUIT_NAMES_RU } from '../utils/helpers.js';
 
 /**
  * Enhanced Classic Card Texture & Graphic Generator
@@ -41,10 +41,13 @@ export class CardGenerator {
   /**
    * Get Texture URL according to filename specification:
    * card_БукваНоминала_of_Масть_front_1x.webp
+   * Uses base URL for GitHub Pages / subfolder compatibility
    */
   static getTextureUrl(rank, suit) {
     const suitName = suit.toLowerCase();
-    return `/cards/card_${rank}_of_${suitName}_front_1x.webp`;
+    const base = import.meta.env?.BASE_URL || './';
+    const cleanBase = base.endsWith('/') ? base : base + '/';
+    return `${cleanBase}cards/card_${rank}_of_${suitName}_front_1x.webp`;
   }
 
   /**
@@ -96,10 +99,12 @@ export class CardGenerator {
    * Generates Complete Classic Card Face
    */
   static generateCardFaceSvg(rank, suit) {
+    const cardTitle = `${RANK_NAMES_RU[rank] || rank} ${SUIT_NAMES_RU[suit] || suit}`;
+
     // If we have an official texture webp file for this rank
     if (this.TEXTURED_RANKS.has(rank)) {
       const textureUrl = this.getTextureUrl(rank, suit);
-      return `<img src="${textureUrl}" alt="${rank} ${suit}" class="card-svg card-face card-texture-img" draggable="false" />`;
+      return `<img src="${textureUrl}" alt="${cardTitle}" class="card-svg card-face card-texture-img" draggable="false" />`;
     }
 
     const color = this.getSuitColor(suit);

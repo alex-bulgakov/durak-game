@@ -4,8 +4,8 @@
   --table-felt-light: #1b5e3a;
   --gold-accent: #f59e0b;
   --gold-light: #fcd34d;
-  --card-width: clamp(68px, 8.2vw, 88px);
-  --card-height: clamp(98px, 11.9vw, 128px);
+  --card-width: clamp(66px, 8vw, 86px);
+  --card-height: clamp(96px, 11.6vw, 125px);
   --card-radius: 8px;
   --card-shadow: 0 6px 14px rgba(0, 0, 0, 0.4);
   --card-shadow-hover: 0 12px 24px rgba(0, 0, 0, 0.55);
@@ -62,12 +62,12 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 6px 16px;
-  background: rgba(10, 25, 17, 0.7);
+  background: rgba(10, 25, 17, 0.75);
   backdrop-filter: blur(8px);
   border-bottom: 1px solid rgba(245, 158, 11, 0.25);
   z-index: 10;
   flex-shrink: 0;
-  min-height: 48px;
+  min-height: 46px;
 }
 
 .brand {
@@ -77,7 +77,7 @@ body {
 }
 
 .game-title {
-  font-size: 1.25rem;
+  font-size: 1.2rem;
   font-weight: 800;
   letter-spacing: 1px;
   background: linear-gradient(135deg, #fde68a, #f59e0b);
@@ -95,16 +95,16 @@ body {
 }
 
 .status-badge {
-  font-size: 0.85rem;
+  font-size: 0.84rem;
   font-weight: 600;
   padding: 4px 14px;
   border-radius: 16px;
-  background: rgba(15, 23, 42, 0.8);
+  background: rgba(15, 23, 42, 0.85);
   border: 1px solid rgba(255, 255, 255, 0.15);
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
   text-align: center;
   transition: all 0.3s ease;
-  max-width: 450px;
+  max-width: 460px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -112,7 +112,7 @@ body {
 
 @media (max-width: 600px) {
   .status-badge {
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     padding: 3px 8px;
     max-width: 180px;
   }
@@ -221,10 +221,10 @@ body {
 }
 
 .btn-action {
-  padding: 8px 20px;
+  padding: 8px 24px;
   font-size: 0.95rem;
-  font-weight: 700;
-  border-radius: 10px;
+  font-weight: 800;
+  border-radius: 12px;
 }
 
 .btn-pass {
@@ -251,7 +251,7 @@ body {
 
 @keyframes pulse-action {
   from { transform: scale(1); box-shadow: 0 0 8px rgba(16, 185, 129, 0.4); }
-  to { transform: scale(1.04); box-shadow: 0 0 16px rgba(16, 185, 129, 0.8); }
+  to { transform: scale(1.05); box-shadow: 0 0 16px rgba(16, 185, 129, 0.8); }
 }
 
 /* Main Playing Arena */
@@ -260,7 +260,7 @@ body {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding: 6px 14px 4px;
+  padding: 4px 12px 2px;
   position: relative;
   overflow: hidden;
 }
@@ -270,7 +270,7 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.55);
   backdrop-filter: blur(6px);
   padding: 3px 12px 3px 4px;
   border-radius: 20px;
@@ -297,7 +297,7 @@ body {
   font-size: 0.82rem;
   font-weight: 700;
   color: var(--text-light);
-  max-width: 120px;
+  max-width: 130px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -322,7 +322,7 @@ body {
 }
 
 .opponent-badge {
-  margin-bottom: 3px;
+  margin-bottom: 2px;
 }
 
 .cards-row {
@@ -340,19 +340,29 @@ body {
   align-items: center;
   justify-content: space-between;
   flex: 1;
-  margin: 4px 0;
-  gap: 12px;
+  margin: 2px 0;
+  gap: 10px;
   position: relative;
   min-height: 0;
 }
 
-.side-deck-area,
+.side-deck-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: calc(var(--card-width) + 32px);
+  margin-left: 18px;
+  flex-shrink: 0;
+}
+
 .side-discard-area {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  width: calc(var(--card-width) + 16px);
+  width: calc(var(--card-width) + 24px);
+  margin-right: 10px;
   flex-shrink: 0;
 }
 
@@ -365,7 +375,7 @@ body {
 .trump-card-wrapper {
   position: absolute;
   top: 6px;
-  left: -20px;
+  left: -22px;
   width: var(--card-width);
   height: var(--card-height);
   transform: rotate(90deg);
@@ -591,22 +601,22 @@ body {
   flex-shrink: 0;
 }
 
+.action-bar-top {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  margin-bottom: 2px;
+}
+
 .player-bottom-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  max-width: 800px;
-  padding: 2px 4px;
-  margin-top: 2px;
-}
-
-.action-bar {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  justify-content: center;
-  min-height: 36px;
+  max-width: 900px;
+  padding: 2px 6px;
+  margin-top: 4px;
 }
 
 /* Card Presentation & Styling */
@@ -619,6 +629,7 @@ body {
   transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
   position: relative;
   flex-shrink: 0;
+  background: #fcf8ee;
 }
 
 .card-svg,
@@ -684,16 +695,16 @@ body {
 
 /* Event Log Drawer */
 .log-drawer {
-  padding: 4px 16px;
-  background: rgba(0, 0, 0, 0.45);
-  font-size: 0.75rem;
+  padding: 3px 16px;
+  background: rgba(0, 0, 0, 0.5);
+  font-size: 0.74rem;
   color: var(--text-muted);
   display: flex;
   align-items: center;
   gap: 10px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   flex-shrink: 0;
-  min-height: 28px;
+  min-height: 26px;
 }
 
 .log-title {
@@ -735,7 +746,7 @@ body {
   color: #0f172a;
   padding: 6px 14px;
   border-radius: 16px;
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   font-weight: 700;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
   white-space: nowrap;

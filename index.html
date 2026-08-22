@@ -44,9 +44,7 @@
       <!-- Opponent Zone (Top) -->
       <section class="player-zone opponent-zone">
         <div class="user-profile-badge opponent-badge">
-          <!-- Floating speech bubble for opponent -->
           <div id="opponentSpeechBubble" class="speech-bubble-wrapper"></div>
-          
           <img id="opponentAvatar" src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=100&auto=format&fit=crop&q=80" alt="Avatar" class="user-avatar" />
           <div class="user-details">
             <span id="opponentName" class="user-name">🤖 Бот</span>
@@ -72,12 +70,21 @@
 
       <!-- Player Zone (Bottom) -->
       <section class="player-zone user-zone">
+        <!-- Action Buttons Area (Above player cards) -->
+        <div class="action-bar-top">
+          <button id="btnPass" class="btn btn-action btn-pass" style="display: none;">
+            Бито
+          </button>
+          <button id="btnTake" class="btn btn-action btn-take" style="display: none;">
+            Взять карты
+          </button>
+        </div>
+
         <!-- Player Hand Cards -->
         <div id="playerHand" class="cards-row player-cards-row"></div>
 
-        <!-- Compact Bottom Control Row (Profile + Actions + Chat) -->
+        <!-- Bottom Info Bar (Profile Left + Chat Right) -->
         <div class="player-bottom-bar">
-          <!-- My Profile Badge with Speech Bubble -->
           <div class="user-profile-badge my-profile-badge">
             <div id="playerSpeechBubble" class="speech-bubble-wrapper"></div>
             <img id="playerAvatar" src="https://vk.com/images/camera_200.png" alt="Avatar" class="user-avatar" />
@@ -87,19 +94,8 @@
             </div>
           </div>
 
-          <!-- Action Buttons (Бито / Взять) -->
-          <div class="action-bar">
-            <button id="btnPass" class="btn btn-action btn-pass" style="display: none;">
-              Бито
-            </button>
-            <button id="btnTake" class="btn btn-action btn-take" style="display: none;">
-              Взять карты
-            </button>
-          </div>
-
-          <!-- Quick Chat Trigger Button -->
           <button id="btnQuickChat" class="btn btn-secondary btn-quick-chat" title="Открыть чат и реакции">
-            <span>💬</span> Эмодзи
+            <span>💬</span> Чат
           </button>
         </div>
       </section>
@@ -242,9 +238,7 @@
           </div>
         </div>
 
-        <div id="leaderboardList" class="leaderboard-scroll-list">
-          <!-- Dynamically populated -->
-        </div>
+        <div id="leaderboardList" class="leaderboard-scroll-list"></div>
       </div>
     </div>
 
