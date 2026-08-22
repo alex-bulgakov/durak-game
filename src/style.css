@@ -393,9 +393,10 @@ body {
 
 .table-pair {
   position: relative;
-  width: var(--card-width);
-  height: calc(var(--card-height) * 1.22);
+  width: calc(var(--card-width) + 16px);
+  height: calc(var(--card-height) + 22px);
   transition: transform 0.2s ease;
+  flex-shrink: 0;
 }
 
 .table-pair.pair-targetable {
@@ -403,35 +404,35 @@ body {
 }
 
 .table-pair.pair-targetable:hover {
-  transform: scale(1.06);
+  transform: scale(1.05);
 }
 
-.table-attack-card {
-  position: absolute;
+.table-pair .table-attack-card {
+  position: absolute !important;
   top: 0;
   left: 0;
   z-index: 2;
   box-shadow: var(--card-shadow);
 }
 
-.table-defense-card {
-  position: absolute;
-  top: 24px;
+.table-pair .table-defense-card {
+  position: absolute !important;
+  top: 18px;
   left: 14px;
   z-index: 4;
-  transform: rotate(7deg);
+  transform: rotate(6deg);
   box-shadow: var(--card-shadow-hover);
   animation: defend-drop 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 @keyframes defend-drop {
   from { transform: translateY(-30px) rotate(0deg) scale(1.1); opacity: 0.5; }
-  to { transform: translateY(0) rotate(7deg) scale(1); opacity: 1; }
+  to { transform: translateY(0) rotate(6deg) scale(1); opacity: 1; }
 }
 
-.defense-drop-slot {
-  position: absolute;
-  top: 24px;
+.table-pair .defense-drop-slot {
+  position: absolute !important;
+  top: 18px;
   left: 14px;
   width: var(--card-width);
   height: var(--card-height);
