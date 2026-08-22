@@ -8,8 +8,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Playfair+Display:ital,wght@0,600;0,800;1,600&display=swap" rel="stylesheet">
-  <script type="module" crossorigin src="./assets/index-Bzsp2S5v.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/index-CrFcJEcy.css">
+  <script type="module" crossorigin src="./assets/index-DSBmn23X.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-BwviIRHc.css">
 </head>
 <body>
   <div id="app">
@@ -25,14 +25,17 @@
       </div>
 
       <div class="header-controls">
+        <button id="btnChatToggle" class="btn btn-secondary btn-chat-header" title="Игровой чат">
+          <span>💬</span> <span class="btn-text">Чат</span> <span id="chatUnreadBadge" class="unread-dot" style="display: none;"></span>
+        </button>
         <button id="btnLeaderboard" class="btn btn-secondary" title="Таблица лидеров">
-          <span>🏆</span> Топ
+          <span>🏆</span> <span class="btn-text">Топ</span>
         </button>
         <button id="btnSoundToggle" class="btn btn-secondary" title="Включить / выключить звук">
           <span class="icon">🔊</span>
         </button>
         <button id="btnLobbyMenu" class="btn btn-primary" title="Выбор режима">
-          <span>🎮</span> Режимы
+          <span>🎮</span> <span class="btn-text">Режимы</span>
         </button>
       </div>
     </header>
@@ -42,6 +45,9 @@
       <!-- Opponent Zone (Top) -->
       <section class="player-zone opponent-zone">
         <div class="user-profile-badge opponent-badge">
+          <!-- Floating speech bubble for opponent -->
+          <div id="opponentSpeechBubble" class="speech-bubble-wrapper"></div>
+          
           <img id="opponentAvatar" src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=100&auto=format&fit=crop&q=80" alt="Avatar" class="user-avatar" />
           <div class="user-details">
             <span id="opponentName" class="user-name">🤖 Бот</span>
@@ -67,24 +73,35 @@
 
       <!-- Player Zone (Bottom) -->
       <section class="player-zone user-zone">
-        <!-- Action Buttons Bar -->
-        <div class="action-bar">
-          <button id="btnPass" class="btn btn-action btn-pass" style="display: none;">
-            Бито
-          </button>
-          <button id="btnTake" class="btn btn-action btn-take" style="display: none;">
-            Взять карты
-          </button>
-        </div>
-
+        <!-- Player Hand Cards -->
         <div id="playerHand" class="cards-row player-cards-row"></div>
 
-        <div class="user-profile-badge my-profile-badge">
-          <img id="playerAvatar" src="https://vk.com/images/camera_200.png" alt="Avatar" class="user-avatar" />
-          <div class="user-details">
-            <span id="playerName" class="user-name">Игрок VK</span>
-            <span id="playerCardCount" class="card-count-badge">6 карт</span>
+        <!-- Compact Bottom Control Row (Profile + Actions + Chat) -->
+        <div class="player-bottom-bar">
+          <!-- My Profile Badge with Speech Bubble -->
+          <div class="user-profile-badge my-profile-badge">
+            <div id="playerSpeechBubble" class="speech-bubble-wrapper"></div>
+            <img id="playerAvatar" src="https://vk.com/images/camera_200.png" alt="Avatar" class="user-avatar" />
+            <div class="user-details">
+              <span id="playerName" class="user-name">Игрок VK</span>
+              <span id="playerCardCount" class="card-count-badge">6 карт</span>
+            </div>
           </div>
+
+          <!-- Action Buttons (Бито / Взять) -->
+          <div class="action-bar">
+            <button id="btnPass" class="btn btn-action btn-pass" style="display: none;">
+              Бито
+            </button>
+            <button id="btnTake" class="btn btn-action btn-take" style="display: none;">
+              Взять карты
+            </button>
+          </div>
+
+          <!-- Quick Chat Trigger Button -->
+          <button id="btnQuickChat" class="btn btn-secondary btn-quick-chat" title="Открыть чат и реакции">
+            <span>💬</span> Эмодзи
+          </button>
         </div>
       </section>
     </main>
@@ -94,6 +111,56 @@
       <span class="log-title">События:</span>
       <div id="gameLog" class="log-items-ticker"></div>
     </footer>
+
+    <!-- In-Game Chat Drawer / Modal -->
+    <div id="chatDrawer" class="chat-drawer-overlay">
+      <div class="chat-drawer-content">
+        <div class="chat-drawer-header">
+          <div class="chat-title-group">
+            <span>💬 Игровой чат</span>
+            <span class="chat-sub-hint">Реакции и сообщения</span>
+          </div>
+          <button id="btnCloseChat" class="btn-close">&times;</button>
+        </div>
+
+        <!-- Quick Reaction Emojis Bar -->
+        <div class="quick-emojis-bar">
+          <button class="btn-emoji" data-emoji="👍">👍</button>
+          <button class="btn-emoji" data-emoji="😂">😂</button>
+          <button class="btn-emoji" data-emoji="😭">😭</button>
+          <button class="btn-emoji" data-emoji="🔥">🔥</button>
+          <button class="btn-emoji" data-emoji="👏">👏</button>
+          <button class="btn-emoji" data-emoji="🃏">🃏</button>
+          <button class="btn-emoji" data-emoji="🤐">🤐</button>
+          <button class="btn-emoji" data-emoji="😡">😡</button>
+          <button class="btn-emoji" data-emoji="🏆">🏆</button>
+          <button class="btn-emoji" data-emoji="😎">😎</button>
+        </div>
+
+        <!-- Quick Phrases Grid -->
+        <div class="quick-phrases-grid">
+          <button class="btn-phrase" data-phrase="Всем привет! 👋">Всем привет! 👋</button>
+          <button class="btn-phrase" data-phrase="Удачи в игре! 🍀">Удачи в игре! 🍀</button>
+          <button class="btn-phrase" data-phrase="Твой ход ⏳">Твой ход ⏳</button>
+          <button class="btn-phrase" data-phrase="Хороший ход! 👍">Хороший ход! 👍</button>
+          <button class="btn-phrase" data-phrase="Не повезло... 😅">Не повезло... 😅</button>
+          <button class="btn-phrase" data-phrase="Бито! 🧹">Бито! 🧹</button>
+          <button class="btn-phrase" data-phrase="Спасибо за игру! 🤝">Спасибо за игру! 🤝</button>
+          <button class="btn-phrase" data-phrase="Еще одну партию? 🔄">Еще партию? 🔄</button>
+        </div>
+
+        <!-- Messages Feed -->
+        <div id="chatMessagesFeed" class="chat-messages-feed">
+          <div class="chat-welcome-msg">Добро пожаловать в игровой чат! Общайтесь эмодзи и фразами.</div>
+        </div>
+
+        <!-- Custom Text Input -->
+        <form id="chatForm" class="chat-input-form">
+          <input type="text" id="chatInput" placeholder="Напишите сообщение..." maxlength="100" autocomplete="off" />
+          <button type="submit" class="btn btn-primary btn-chat-send">Отправить</button>
+        </form>
+      </div>
+    </div>
 
     <!-- Main Lobby / Mode Selection Modal -->
     <div id="lobbyModal" class="modal-overlay">
