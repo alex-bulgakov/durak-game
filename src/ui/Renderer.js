@@ -159,11 +159,17 @@ export class Renderer {
     const count = state.botHand.length;
 
     let cardsHtml = '';
-    const maxSpacing = Math.min(45, 600 / Math.max(1, count));
+    const mid = (count - 1) / 2;
+    const angleStep = count <= 6 ? 2.5 : Math.max(1.2, 16 / Math.max(1, count));
+    const overlap = count <= 4 ? 8 : (count <= 6 ? 20 : Math.min(45, Math.max(18, 240 / Math.max(1, count))));
 
     state.botHand.forEach((card, idx) => {
+      const rot = ((idx - mid) * -angleStep).toFixed(2);
+      const y = (Math.abs(idx - mid) * 1.5).toFixed(1);
+
       cardsHtml += `
-        <div class="card-item bot-card" style="--card-index: ${idx}; margin-left: ${idx === 0 ? 0 : -maxSpacing}px;">
+        <div class="card-item bot-card" 
+             style="--card-index: ${idx}; margin-left: ${idx === 0 ? 0 : -overlap}px; transform: rotate(${rot}deg) translateY(${y}px); transform-origin: center top;">
           ${CardGenerator.generateCardBackSvg()}
         </div>
       `;
@@ -220,7 +226,10 @@ export class Renderer {
     const count = state.playerHand.length;
 
     let cardsHtml = '';
-    const maxSpacing = Math.min(55, 750 / Math.max(1, count));
+    const mid = (count - 1) / 2;
+    // Dynamic fan angle and spacing
+    const angleStep = count <= 5 ? 4.5 : (count <= 8 ? 3.5 : Math.max(2, 26 / Math.max(1, count)));
+    const overlap = count <= 4 ? 8 : (count <= 6 ? 22 : Math.min(48, Math.max(18, 280 / Math.max(1, count))));
 
     state.playerHand.forEach((card, idx) => {
       const isSelected = selectedPlayerCard && selectedPlayerCard.id === card.id;
@@ -234,11 +243,14 @@ export class Renderer {
         }
       }
 
+      const rot = ((idx - mid) * angleStep).toFixed(2);
+      const yOffset = (Math.pow(Math.abs(idx - mid), 1.25) * 2.2).toFixed(1);
+
       cardsHtml += `
         <div class="card-item player-card ${isSelected ? 'selected' : ''} ${isPlayable ? 'playable' : ''} ${card.isTrump ? 'is-trump' : ''}" 
              data-card-id="${card.id}" 
              data-index="${idx}"
-             style="--card-index: ${idx}; margin-left: ${idx === 0 ? 0 : -maxSpacing}px;">
+             style="--card-index: ${idx}; --fan-rot: ${rot}deg; --fan-y: ${yOffset}px; margin-left: ${idx === 0 ? 0 : -overlap}px;">
           ${card.getSvg(true)}
           ${card.isTrump ? '<div class="trump-glow-tag">КОЗЫРЬ</div>' : ''}
         </div>
