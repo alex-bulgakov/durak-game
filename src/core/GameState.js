@@ -1,27 +1,50 @@
 import { Deck } from './Deck.js';
 import { Rules } from './Rules.js';
-import { SUIT_NAMES_RU, delay } from '../utils/helpers.js';
+import { SUIT_NAMES_RU } from '../utils/helpers.js';
 
 export const PLAYERS = {
   PLAYER: 'player',
-  BOT: 'bot'
+  OPPONENT: 'opponent'
+};
+
+export const GAME_MODES = {
+  BOT: 'BOT',
+  ONLINE: 'ONLINE'
 };
 
 export class GameState {
   constructor() {
     this.deck = new Deck();
     this.playerHand = [];
-    this.botHand = [];
+    this.botHand = []; // Opponent's hand
     this.tablePairs = [];
     this.discardPile = [];
     this.attacker = PLAYERS.PLAYER;
-    this.defender = PLAYERS.BOT;
+    this.defender = PLAYERS.OPPONENT;
     this.defenderTaking = false;
     this.gameOver = false;
     this.winner = null;
     this.logs = [];
+    this.gameMode = GAME_MODES.BOT;
+
+    this.playerProfile = {
+      name: 'Вы',
+      photo: 'https://vk.com/images/camera_200.png'
+    };
+    this.opponentProfile = {
+      name: 'Бот',
+      photo: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=100&auto=format&fit=crop&q=80'
+    };
+
     this.onStateChange = null;
     this.onSoundRequest = null;
+    this.onGameOver = null;
+  }
+
+  setProfiles(player, opponent, mode = GAME_MODES.BOT) {
+    this.playerProfile = player || this.playerProfile;
+    this.opponentProfile = opponent || this.opponentProfile;
+    this.gameMode = mode;
   }
 
   log(msg) {
@@ -52,7 +75,7 @@ export class GameState {
     this.winner = null;
     this.logs = [];
 
-    this.log(`🎮 Новая игра началась! Козырь: ${SUIT_NAMES_RU[this.deck.trumpSuit]} (${this.deck.trumpCard.symbol})`);
+    this.log(`🎮 Партия началась! Козырь: ${SUIT_NAMES_RU[this.deck.trumpSuit]} (${this.deck.trumpCard.symbol})`);
 
     // Deal 6 cards to each
     this.playerHand = this.deck.deal(6);
@@ -64,29 +87,31 @@ export class GameState {
     const playerLowTrump = Rules.getLowestTrump(this.playerHand, this.deck.trumpSuit);
     const botLowTrump = Rules.getLowestTrump(this.botHand, this.deck.trumpSuit);
 
+    const playerName = this.playerProfile.name;
+    const opponentName = this.opponentProfile.name;
+
     if (playerLowTrump && botLowTrump) {
       if (playerLowTrump.value < botLowTrump.value) {
         this.attacker = PLAYERS.PLAYER;
-        this.defender = PLAYERS.BOT;
-        this.log(`👉 Ваш ход (наименьший козырь ${playerLowTrump.shortName})`);
+        this.defender = PLAYERS.OPPONENT;
+        this.log(`👉 Первым ходит ${playerName} (козырь ${playerLowTrump.shortName})`);
       } else {
-        this.attacker = PLAYERS.BOT;
+        this.attacker = PLAYERS.OPPONENT;
         this.defender = PLAYERS.PLAYER;
-        this.log(`🤖 Ходит Бот (наименьший козырь ${botLowTrump.shortName})`);
+        this.log(`👉 Первым ходит ${opponentName} (козырь ${botLowTrump.shortName})`);
       }
     } else if (playerLowTrump) {
       this.attacker = PLAYERS.PLAYER;
-      this.defender = PLAYERS.BOT;
-      this.log(`👉 Ваш ход (козырь ${playerLowTrump.shortName})`);
+      this.defender = PLAYERS.OPPONENT;
+      this.log(`👉 Первым ходит ${playerName} (козырь ${playerLowTrump.shortName})`);
     } else if (botLowTrump) {
-      this.attacker = PLAYERS.BOT;
+      this.attacker = PLAYERS.OPPONENT;
       this.defender = PLAYERS.PLAYER;
-      this.log(`🤖 Ходит Бот (козырь ${botLowTrump.shortName})`);
+      this.log(`👉 Первым ходит ${opponentName} (козырь ${botLowTrump.shortName})`);
     } else {
-      // No trumps dealt: player starts
       this.attacker = PLAYERS.PLAYER;
-      this.defender = PLAYERS.BOT;
-      this.log(`👉 Козырей на руках нет. Первый ход за вами.`);
+      this.defender = PLAYERS.OPPONENT;
+      this.log(`👉 Козырей на руках нет. Первый ход за ${playerName}.`);
     }
 
     this.playSound('deal');
@@ -106,7 +131,7 @@ export class GameState {
   }
 
   /**
-   * Player or Bot attacks with card
+   * Player or Opponent attacks with card
    */
   attack(card, player = PLAYERS.PLAYER) {
     if (this.gameOver) return false;
@@ -132,20 +157,20 @@ export class GameState {
       defense: null
     });
 
-    const who = player === PLAYERS.PLAYER ? 'Вы пошли' : 'Бот пошел';
-    this.log(`${who}: ${card.name}`);
+    const who = player === PLAYERS.PLAYER ? this.playerProfile.name : this.opponentProfile.name;
+    this.log(`${who} ходит: ${card.name}`);
     this.playSound('snap');
     this.notify();
     return true;
   }
 
   /**
-   * Player or Bot defends against an attack card on table
+   * Player or Opponent defends against an attack card
    */
   defend(defenseCard, pairIndex, player = PLAYERS.PLAYER) {
     if (this.gameOver) return false;
     if (this.defender !== player) return false;
-    if (this.defenderTaking) return false; // Already taking, can't defend
+    if (this.defenderTaking) return false;
 
     const pair = this.tablePairs[pairIndex];
     if (!pair || pair.defense !== null) return false;
@@ -161,8 +186,8 @@ export class GameState {
 
     pair.defense = defenseCard;
 
-    const who = player === PLAYERS.PLAYER ? 'Вы отбили' : 'Бот отбил';
-    this.log(`${who}: ${pair.attack.shortName} картой ${defenseCard.name}`);
+    const who = player === PLAYERS.PLAYER ? this.playerProfile.name : this.opponentProfile.name;
+    this.log(`${who} отбивает: ${pair.attack.shortName} картой ${defenseCard.name}`);
     this.playSound('snap');
     this.notify();
     return true;
@@ -177,8 +202,8 @@ export class GameState {
     if (this.tablePairs.length === 0) return false;
 
     this.defenderTaking = true;
-    const who = player === PLAYERS.PLAYER ? 'Вы берете карты' : 'Бот берет карты';
-    this.log(`📥 ${who}. Атакующий может подкинуть карты.`);
+    const who = player === PLAYERS.PLAYER ? this.playerProfile.name : this.opponentProfile.name;
+    this.log(`📥 ${who} берет карты.`);
     this.playSound('take');
     this.notify();
     return true;
@@ -279,16 +304,19 @@ export class GameState {
         this.winner = 'draw';
         this.log(`🤝 Ничья! Карты закончились у обоих.`);
         this.playSound('win');
+        if (this.onGameOver) this.onGameOver('DRAW');
       } else if (playerEmpty) {
         this.gameOver = true;
         this.winner = PLAYERS.PLAYER;
-        this.log(`🏆 Поздравляем! Вы победили! Бот остался дураком.`);
+        this.log(`🏆 Поздравляем! ${this.playerProfile.name} победил(а)!`);
         this.playSound('win');
+        if (this.onGameOver) this.onGameOver('WIN');
       } else if (botEmpty) {
         this.gameOver = true;
-        this.winner = PLAYERS.BOT;
-        this.log(`🤦 Бот победил! Вы остались в дураках.`);
+        this.winner = PLAYERS.OPPONENT;
+        this.log(`🤦 ${this.opponentProfile.name} победил(а)!`);
         this.playSound('lose');
+        if (this.onGameOver) this.onGameOver('LOSS');
       }
     }
   }

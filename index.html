@@ -2,9 +2,9 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-  <title>Подкидной Дурак — Онлайн Игра</title>
+  <title>Подкидной Дурак — Игра ВКонтакте</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Playfair+Display:ital,wght@0,600;0,800;1,600&display=swap" rel="stylesheet">
@@ -16,7 +16,7 @@
     <header class="game-header">
       <div class="brand">
         <h1 class="game-title">ДУРАК</h1>
-        <span class="rules-badge">Подкидной 36 карт</span>
+        <span class="rules-badge">VK Games</span>
       </div>
 
       <div id="statusBadge" class="status-badge status-player">
@@ -24,22 +24,28 @@
       </div>
 
       <div class="header-controls">
-        <button id="btnSoundToggle" class="btn btn-secondary" title="Включить / выключить звук">
-          <span class="icon">🔊</span> Звук: Вкл
+        <button id="btnLeaderboard" class="btn btn-secondary" title="Таблица лидеров">
+          <span>🏆</span> Топ
         </button>
-        <button id="btnNewGame" class="btn btn-primary" title="Начать новую партию">
-          <span>🔄</span> Новая игра
+        <button id="btnSoundToggle" class="btn btn-secondary" title="Включить / выключить звук">
+          <span class="icon">🔊</span>
+        </button>
+        <button id="btnLobbyMenu" class="btn btn-primary" title="Выбор режима">
+          <span>🎮</span> Режимы
         </button>
       </div>
     </header>
 
     <!-- Table Arena -->
     <main class="game-table">
-      <!-- Opponent / Bot Zone -->
+      <!-- Opponent Zone (Top) -->
       <section class="player-zone opponent-zone">
-        <div class="player-info-tag">
-          <span>🤖 Бот</span>
-          <span id="botCardCount" class="card-count-badge">6 карт</span>
+        <div class="user-profile-badge opponent-badge">
+          <img id="opponentAvatar" src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=100&auto=format&fit=crop&q=80" alt="Avatar" class="user-avatar" />
+          <div class="user-details">
+            <span id="opponentName" class="user-name">🤖 Бот</span>
+            <span id="botCardCount" class="card-count-badge">6 карт</span>
+          </div>
         </div>
         <div id="botHand" class="cards-row bot-cards-row"></div>
       </section>
@@ -58,7 +64,7 @@
         <div id="discardContainer" class="side-discard-area"></div>
       </section>
 
-      <!-- Player Zone -->
+      <!-- Player Zone (Bottom) -->
       <section class="player-zone user-zone">
         <!-- Action Buttons Bar -->
         <div class="action-bar">
@@ -72,9 +78,12 @@
 
         <div id="playerHand" class="cards-row player-cards-row"></div>
 
-        <div class="player-info-tag" style="margin-top: 6px; margin-bottom: 0;">
-          <span>👤 Вы</span>
-          <span id="playerCardCount" class="card-count-badge">6 карт</span>
+        <div class="user-profile-badge my-profile-badge">
+          <img id="playerAvatar" src="https://vk.com/images/camera_200.png" alt="Avatar" class="user-avatar" />
+          <div class="user-details">
+            <span id="playerName" class="user-name">Игрок VK</span>
+            <span id="playerCardCount" class="card-count-badge">6 карт</span>
+          </div>
         </div>
       </section>
     </main>
@@ -85,15 +94,111 @@
       <div id="gameLog" class="log-items-ticker"></div>
     </footer>
 
+    <!-- Main Lobby / Mode Selection Modal -->
+    <div id="lobbyModal" class="modal-overlay">
+      <div class="modal-card lobby-card">
+        <div class="lobby-header">
+          <div class="lobby-icon">🃏</div>
+          <h2 class="modal-title">Подкидной Дурак</h2>
+          <p class="modal-desc">Выберите режим игры</p>
+        </div>
+
+        <div class="lobby-modes-grid">
+          <button id="btnModeBot" class="mode-card mode-bot">
+            <div class="mode-icon">🤖</div>
+            <div class="mode-info">
+              <div class="mode-title">Игра с Ботом</div>
+              <div class="mode-sub">Одиночная быстрая игра с умным ИИ</div>
+            </div>
+          </button>
+
+          <button id="btnModeOnline" class="mode-card mode-online">
+            <div class="mode-icon">⚔️</div>
+            <div class="mode-info">
+              <div class="mode-title">Игра Онлайн</div>
+              <div class="mode-sub">Матчмейкинг с реальными игроками VK</div>
+            </div>
+          </button>
+        </div>
+
+        <div class="lobby-actions">
+          <button id="btnLobbyLeaderboard" class="btn btn-secondary">
+            <span>🏆</span> Лидерборд
+          </button>
+          <button id="btnLobbyFavorite" class="btn btn-secondary">
+            <span>⭐</span> В избранное
+          </button>
+          <button id="btnLobbyShare" class="btn btn-secondary">
+            <span>📤</span> Поделиться
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Matchmaking Queue Modal -->
+    <div id="matchmakingModal" class="modal-overlay">
+      <div class="modal-card matchmaking-card">
+        <div class="radar-spinner">
+          <div class="radar-ring"></div>
+          <div class="radar-ring"></div>
+          <div class="radar-dot"></div>
+        </div>
+        <h2 class="modal-title">Поиск соперника...</h2>
+        <p class="modal-desc">Подбираем реального игрока по рейтингу</p>
+        <div id="matchSearchTimer" class="search-timer-badge">00:01</div>
+        <button id="btnCancelMatchmaking" class="btn btn-secondary" style="margin-top: 18px;">
+          Отменить поиск
+        </button>
+      </div>
+    </div>
+
+    <!-- Leaderboard Modal -->
+    <div id="leaderboardModal" class="modal-overlay">
+      <div class="modal-card leaderboard-card">
+        <div class="modal-header-row">
+          <h2 class="modal-title">🏆 Доска лидеров</h2>
+          <button id="btnCloseLeaderboard" class="btn-close">&times;</button>
+        </div>
+
+        <div class="my-stats-summary">
+          <div class="stat-pill">
+            <span class="stat-label">Рейтинг</span>
+            <span id="myRatingDisplay" class="stat-val">1000</span>
+          </div>
+          <div class="stat-pill">
+            <span class="stat-label">Побед</span>
+            <span id="myWinsDisplay" class="stat-val">0</span>
+          </div>
+          <div class="stat-pill">
+            <span class="stat-label">Винрейт</span>
+            <span id="myWinRateDisplay" class="stat-val">0%</span>
+          </div>
+        </div>
+
+        <div id="leaderboardList" class="leaderboard-scroll-list">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+    </div>
+
     <!-- Game Over Modal -->
     <div id="gameOverModal" class="modal-overlay">
       <div class="modal-card">
         <div id="gameOverIcon" class="modal-icon">🏆</div>
         <h2 id="gameOverTitle" class="modal-title">Игра окончена</h2>
         <p id="gameOverDesc" class="modal-desc">Результаты партии...</p>
-        <button id="btnRestartModal" class="btn btn-primary btn-action">
-          Сыграть еще раз
-        </button>
+        
+        <div class="gameover-buttons">
+          <button id="btnRestartModal" class="btn btn-primary btn-action">
+            Сыграть еще раз
+          </button>
+          <button id="btnPostWall" class="btn btn-secondary">
+            <span>📢</span> На стену VK
+          </button>
+          <button id="btnBackToLobby" class="btn btn-secondary">
+            В меню
+          </button>
+        </div>
       </div>
     </div>
   </div>

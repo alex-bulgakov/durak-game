@@ -1,6 +1,6 @@
 import { CardGenerator } from '../components/CardGenerator.js';
 import { Rules } from '../core/Rules.js';
-import { PLAYERS } from '../core/GameState.js';
+import { PLAYERS, GAME_MODES } from '../core/GameState.js';
 import { SUIT_NAMES_RU } from '../utils/helpers.js';
 
 export class Renderer {
@@ -10,6 +10,7 @@ export class Renderer {
 
   render(state, selectedPlayerCard = null) {
     this.renderHeader(state);
+    this.renderProfiles(state);
     this.renderDeckAndDiscard(state);
     this.renderBotHand(state);
     this.renderTable(state, selectedPlayerCard);
@@ -17,6 +18,24 @@ export class Renderer {
     this.renderControls(state);
     this.renderLogs(state);
     this.renderGameOver(state);
+  }
+
+  renderProfiles(state) {
+    // Opponent Profile (Top)
+    if (this.elements.opponentName) {
+      this.elements.opponentName.textContent = state.opponentProfile?.name || 'Соперник';
+    }
+    if (this.elements.opponentAvatar && state.opponentProfile?.photo) {
+      this.elements.opponentAvatar.src = state.opponentProfile.photo;
+    }
+
+    // Current Player Profile (Bottom)
+    if (this.elements.playerName) {
+      this.elements.playerName.textContent = state.playerProfile?.name || 'Вы';
+    }
+    if (this.elements.playerAvatar && state.playerProfile?.photo) {
+      this.elements.playerAvatar.src = state.playerProfile.photo;
+    }
   }
 
   renderHeader(state) {
@@ -30,8 +49,8 @@ export class Renderer {
       if (state.winner === PLAYERS.PLAYER) {
         statusText = '🎉 ПОБЕДА! Вы выиграли партию!';
         statusClass = 'status-win';
-      } else if (state.winner === PLAYERS.BOT) {
-        statusText = '💀 ВЫ ДУРАК! Бот победил в этой партии.';
+      } else if (state.winner === PLAYERS.OPPONENT) {
+        statusText = `💀 ПОРАЖЕНИЕ! ${state.opponentProfile.name} победил.`;
         statusClass = 'status-lose';
       } else {
         statusText = '🤝 НИЧЬЯ! Боевая ничья!';
@@ -39,19 +58,18 @@ export class Renderer {
       }
     } else if (isPlayerTurn) {
       if (isDefenderTaking) {
-        statusText = 'Бот берет карты. Вы можете подкинуть еще или нажать «Бито»';
+        statusText = `${state.opponentProfile.name} берет карты. Подкиньте еще или нажмите «Бито»`;
       } else if (state.tablePairs.length === 0) {
         statusText = 'Ваш ход: выберите карту для атаки';
       } else if (Rules.areAllAttacksBeaten(state.tablePairs)) {
         statusText = 'Все карты отбиты! Подкиньте еще или нажмите «Бито»';
       } else {
-        statusText = 'Ждем ответа Бота...';
+        statusText = `Ждем защиты от ${state.opponentProfile.name}...`;
       }
       statusClass = 'status-player';
     } else {
-      // Bot is attacker
       if (isDefenderTaking) {
-        statusText = 'Вы берете карты. Бот подкидывает...';
+        statusText = 'Вы берете карты. Соперник подкидывает...';
         statusClass = 'status-bot';
       } else {
         const unbitten = state.tablePairs.filter(p => !p.defense).length;
@@ -59,7 +77,7 @@ export class Renderer {
           statusText = 'Защищайтесь! Отбейте карту на столе или нажмите «Взять»';
           statusClass = 'status-alert';
         } else {
-          statusText = 'Бот атакует...';
+          statusText = `${state.opponentProfile.name} атакует...`;
           statusClass = 'status-bot';
         }
       }
@@ -72,7 +90,6 @@ export class Renderer {
   }
 
   renderDeckAndDiscard(state) {
-    // Render Trump Suit & Deck
     const trumpSuitName = state.deck.trumpSuit ? SUIT_NAMES_RU[state.deck.trumpSuit] : '';
     const trumpCard = state.deck.trumpCard;
     const remaining = state.deck.remaining;
@@ -87,7 +104,6 @@ export class Renderer {
           </div>
         `;
       } else {
-        // Deck with remaining cards and bottom trump card
         const trumpRotated = trumpCard ? `
           <div class="trump-card-wrapper" title="Козырь: ${trumpCard.name}">
             ${trumpCard.getSvg(true)}
@@ -101,7 +117,7 @@ export class Renderer {
           <div class="deck-stack-card" style="transform: translate(0px, 0px);">
             ${CardGenerator.generateCardBackSvg()}
           </div>
-        ` : (remaining === 1 ? '' : '');
+        ` : '';
 
         this.elements.deckContainer.innerHTML = `
           <div class="deck-area">
@@ -115,7 +131,6 @@ export class Renderer {
       }
     }
 
-    // Render Discard Pile (Бито)
     if (this.elements.discardContainer) {
       const count = state.discardPile.length;
       if (count === 0) {
@@ -210,13 +225,11 @@ export class Renderer {
     state.playerHand.forEach((card, idx) => {
       const isSelected = selectedPlayerCard && selectedPlayerCard.id === card.id;
 
-      // Determine if card is playable
       let isPlayable = false;
       if (!state.gameOver) {
         if (state.attacker === PLAYERS.PLAYER) {
           isPlayable = Rules.canAttack(card, state.tablePairs, state.botHand.length);
         } else if (state.defender === PLAYERS.PLAYER && !state.defenderTaking) {
-          // Playable if it can defend against any currently unbitten attack card
           isPlayable = state.tablePairs.some(p => !p.defense && Rules.canDefend(p.attack, card, state.deck.trumpSuit));
         }
       }
@@ -242,12 +255,11 @@ export class Renderer {
     const isPlayerAttacker = state.attacker === PLAYERS.PLAYER;
     const isPlayerDefender = state.defender === PLAYERS.PLAYER;
 
-    // Pass / Bito button
     if (this.elements.btnPass) {
       if (isPlayerAttacker && state.tablePairs.length > 0) {
         const canPass = state.defenderTaking || Rules.areAllAttacksBeaten(state.tablePairs);
         this.elements.btnPass.disabled = !canPass || state.gameOver;
-        this.elements.btnPass.textContent = state.defenderTaking ? 'Завершить (Бот берет)' : 'Бито';
+        this.elements.btnPass.textContent = state.defenderTaking ? `Завершить (${state.opponentProfile.name} берет)` : 'Бито';
         this.elements.btnPass.classList.toggle('highlight-btn', canPass);
         this.elements.btnPass.style.display = 'inline-flex';
       } else {
@@ -255,7 +267,6 @@ export class Renderer {
       }
     }
 
-    // Take button
     if (this.elements.btnTake) {
       if (isPlayerDefender && state.tablePairs.length > 0 && !state.defenderTaking) {
         this.elements.btnTake.disabled = state.gameOver;
@@ -283,12 +294,12 @@ export class Renderer {
 
       if (state.winner === PLAYERS.PLAYER) {
         icon = '🏆';
-        title = 'Вы выиграли!';
-        desc = 'Отличная игра! Бот остался в дураках.';
-      } else if (state.winner === PLAYERS.BOT) {
+        title = 'Победа!';
+        desc = `Отличная игра! Вы победили соперника (${state.opponentProfile.name}).`;
+      } else if (state.winner === PLAYERS.OPPONENT) {
         icon = '🃏';
-        title = 'Вы проиграли!';
-        desc = 'В этот раз победил Бот. Попробуйте еще раз!';
+        title = 'Поражение!';
+        desc = `В этот раз победу одержал ${state.opponentProfile.name}. Попробуйте взять реванш!`;
       } else {
         icon = '🤝';
         title = 'Ничья!';
@@ -301,6 +312,42 @@ export class Renderer {
       this.elements.gameOverModal.classList.add('visible');
     } else {
       this.elements.gameOverModal.classList.remove('visible');
+    }
+  }
+
+  renderLeaderboard(leaders, currentStats) {
+    if (!this.elements.leaderboardList) return;
+
+    let html = '';
+    leaders.forEach(item => {
+      const isTop3 = item.rank <= 3;
+      const rankBadge = item.rank === 1 ? '🥇' : (item.rank === 2 ? '🥈' : (item.rank === 3 ? '🥉' : `#${item.rank}`));
+      const highlight = item.isCurrentUser ? 'leader-item-current' : '';
+
+      html += `
+        <div class="leader-item ${highlight}">
+          <div class="leader-rank ${isTop3 ? 'top-rank' : ''}">${rankBadge}</div>
+          <img src="${item.photo}" class="leader-avatar" alt="${item.name}" />
+          <div class="leader-info">
+            <div class="leader-name">${item.name} ${item.isCurrentUser ? '<span class="you-tag">(Вы)</span>' : ''}</div>
+            <div class="leader-streak">Побед: ${item.wins} | Серия: 🔥${item.streak || 0}</div>
+          </div>
+          <div class="leader-rating">${item.rating} <span>pts</span></div>
+        </div>
+      `;
+    });
+
+    this.elements.leaderboardList.innerHTML = html;
+
+    if (this.elements.myRatingDisplay) {
+      this.elements.myRatingDisplay.textContent = currentStats.rating;
+    }
+    if (this.elements.myWinsDisplay) {
+      this.elements.myWinsDisplay.textContent = currentStats.wins;
+    }
+    if (this.elements.myWinRateDisplay) {
+      const wr = currentStats.totalGames > 0 ? Math.round((currentStats.wins / currentStats.totalGames) * 100) : 0;
+      this.elements.myWinRateDisplay.textContent = `${wr}%`;
     }
   }
 

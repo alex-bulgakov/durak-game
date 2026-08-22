@@ -11,5 +11,8 @@
   },
   "devDependencies": {
     "vite": "^6.2.0"
+  },
+  "dependencies": {
+    "@vkontakte/vk-bridge": "^3.0.2"
   }
 }

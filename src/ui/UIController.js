@@ -1,7 +1,10 @@
-import { PLAYERS } from '../core/GameState.js';
+import { PLAYERS, GAME_MODES } from '../core/GameState.js';
 import { BotStrategy } from '../ai/BotStrategy.js';
 import { Rules } from '../core/Rules.js';
 import { delay } from '../utils/helpers.js';
+import { vkService } from '../services/VKService.js';
+import { leaderboardService } from '../services/LeaderboardService.js';
+import { matchmakingService } from '../services/MatchmakingService.js';
 
 export class UIController {
   constructor(gameState, renderer, soundEffects, domElements) {
@@ -11,8 +14,26 @@ export class UIController {
     this.elements = domElements;
     this.selectedCard = null;
     this.isBotProcessing = false;
+    this.isSimulatedOnline = false;
+    this.searchTimerInterval = null;
+    this.searchStartTime = 0;
+
+    this.init();
+  }
+
+  async init() {
+    // 1. Initialize VK Bridge & User
+    const user = await vkService.init();
+    await leaderboardService.loadStats(user.id);
+
+    this.state.playerProfile = {
+      id: user.id,
+      name: user.name,
+      photo: user.photo
+    };
 
     this.initEvents();
+    this.showLobby();
   }
 
   initEvents() {
@@ -26,10 +47,42 @@ export class UIController {
       else if (soundName === 'lose') this.sound.playLose();
     };
 
-    // State change callback -> re-render & check if bot needs to move
+    // State change callback -> re-render & check if opponent needs to move
     this.state.onStateChange = async () => {
       this.renderer.render(this.state, this.selectedCard);
-      await this.handleBotTurnIfNeeded();
+      await this.handleOpponentTurnIfNeeded();
+    };
+
+    // Game Over hook
+    this.state.onGameOver = async (result) => {
+      await leaderboardService.recordMatchResult(result, this.state.playerProfile.id);
+      // Show Interstitial Ad upon match end (VK requirement)
+      setTimeout(() => {
+        vkService.showInterstitialAd();
+      }, 1200);
+    };
+
+    // Remote multiplayer opponent actions
+    matchmakingService.onOpponentAction = (action) => {
+      if (!action) return;
+      if (action.type === 'ATTACK') {
+        const card = this.state.botHand.find(c => c.id === action.cardId) || action.card;
+        this.state.attack(card, PLAYERS.OPPONENT);
+      } else if (action.type === 'DEFEND') {
+        const card = this.state.botHand.find(c => c.id === action.cardId) || action.card;
+        this.state.defend(card, action.pairIndex, PLAYERS.OPPONENT);
+      } else if (action.type === 'PASS') {
+        this.state.passAttack(PLAYERS.OPPONENT);
+      } else if (action.type === 'TAKE') {
+        this.state.declareTake(PLAYERS.OPPONENT);
+      }
+    };
+
+    matchmakingService.onOpponentDisconnect = () => {
+      alert('Соперник покинул игру. Вам присуждена техническая победа!');
+      this.state.gameOver = true;
+      this.state.winner = PLAYERS.PLAYER;
+      this.state.notify();
     };
 
     // Click on Player Card
@@ -59,6 +112,11 @@ export class UIController {
         if (pair && !pair.defense && Rules.canDefend(pair.attack, this.selectedCard, this.state.deck.trumpSuit)) {
           const playedCard = this.selectedCard;
           this.selectedCard = null;
+
+          if (this.state.gameMode === GAME_MODES.ONLINE && !this.isSimulatedOnline) {
+            matchmakingService.sendGameAction({ type: 'DEFEND', cardId: playedCard.id, pairIndex });
+          }
+
           this.state.defend(playedCard, pairIndex, PLAYERS.PLAYER);
         }
       });
@@ -70,6 +128,11 @@ export class UIController {
         if (this.state.gameOver || this.isBotProcessing) return;
         this.sound.playClick();
         this.selectedCard = null;
+
+        if (this.state.gameMode === GAME_MODES.ONLINE && !this.isSimulatedOnline) {
+          matchmakingService.sendGameAction({ type: 'PASS' });
+        }
+
         this.state.passAttack(PLAYERS.PLAYER);
       });
     }
@@ -80,24 +143,83 @@ export class UIController {
         if (this.state.gameOver || this.isBotProcessing) return;
         this.sound.playClick();
         this.selectedCard = null;
+
+        if (this.state.gameMode === GAME_MODES.ONLINE && !this.isSimulatedOnline) {
+          matchmakingService.sendGameAction({ type: 'TAKE' });
+        }
+
         this.state.declareTake(PLAYERS.PLAYER);
       });
     }
 
-    // Restart / New Game Buttons
-    if (this.elements.btnNewGame) {
-      this.elements.btnNewGame.addEventListener('click', () => {
+    // Lobby Buttons
+    if (this.elements.btnModeBot) {
+      this.elements.btnModeBot.addEventListener('click', () => {
         this.sound.playClick();
-        this.startNewGame();
+        this.startBotGame();
       });
     }
 
-    if (this.elements.btnRestartModal) {
-      this.elements.btnRestartModal.addEventListener('click', () => {
+    if (this.elements.btnModeOnline) {
+      this.elements.btnModeOnline.addEventListener('click', () => {
         this.sound.playClick();
-        this.startNewGame();
+        this.startOnlineMatchmaking();
       });
     }
+
+    if (this.elements.btnCancelMatchmaking) {
+      this.elements.btnCancelMatchmaking.addEventListener('click', () => {
+        this.sound.playClick();
+        this.cancelMatchmaking();
+      });
+    }
+
+    if (this.elements.btnLobbyMenu) {
+      this.elements.btnLobbyMenu.addEventListener('click', () => {
+        this.sound.playClick();
+        this.showLobby();
+      });
+    }
+
+    if (this.elements.btnBackToLobby) {
+      this.elements.btnBackToLobby.addEventListener('click', () => {
+        this.sound.playClick();
+        this.elements.gameOverModal?.classList.remove('visible');
+        this.showLobby();
+      });
+    }
+
+    // Leaderboard Modal
+    const openLeaderboard = () => {
+      this.sound.playClick();
+      const leaders = leaderboardService.getLeaderboard(this.state.playerProfile);
+      this.renderer.renderLeaderboard(leaders, leaderboardService.stats);
+      this.elements.leaderboardModal?.classList.add('visible');
+    };
+
+    this.elements.btnLeaderboard?.addEventListener('click', openLeaderboard);
+    this.elements.btnLobbyLeaderboard?.addEventListener('click', openLeaderboard);
+
+    this.elements.btnCloseLeaderboard?.addEventListener('click', () => {
+      this.sound.playClick();
+      this.elements.leaderboardModal?.classList.remove('visible');
+    });
+
+    // VK Social actions
+    this.elements.btnLobbyFavorite?.addEventListener('click', () => {
+      this.sound.playClick();
+      vkService.addToFavorites();
+    });
+
+    this.elements.btnLobbyShare?.addEventListener('click', () => {
+      this.sound.playClick();
+      vkService.shareGame();
+    });
+
+    this.elements.btnPostWall?.addEventListener('click', () => {
+      this.sound.playClick();
+      vkService.postToWall();
+    });
 
     // Sound Toggle
     if (this.elements.btnSoundToggle) {
@@ -108,34 +230,106 @@ export class UIController {
         if (isEnabled) this.sound.playClick();
       });
     }
+
+    // Restart Modal
+    if (this.elements.btnRestartModal) {
+      this.elements.btnRestartModal.addEventListener('click', () => {
+        this.sound.playClick();
+        this.elements.gameOverModal?.classList.remove('visible');
+        if (this.state.gameMode === GAME_MODES.ONLINE) {
+          this.startOnlineMatchmaking();
+        } else {
+          this.startBotGame();
+        }
+      });
+    }
+  }
+
+  showLobby() {
+    this.elements.lobbyModal?.classList.add('visible');
+  }
+
+  hideLobby() {
+    this.elements.lobbyModal?.classList.remove('visible');
+  }
+
+  startBotGame() {
+    this.hideLobby();
+    this.isSimulatedOnline = false;
+    this.state.setProfiles(
+      this.state.playerProfile,
+      { name: '🤖 Бот', photo: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=100&auto=format&fit=crop&q=80' },
+      GAME_MODES.BOT
+    );
+    this.selectedCard = null;
+    this.isBotProcessing = false;
+    this.state.startNewGame();
+  }
+
+  startOnlineMatchmaking() {
+    this.hideLobby();
+    this.elements.matchmakingModal?.classList.add('visible');
+    this.searchStartTime = Date.now();
+
+    if (this.elements.matchSearchTimer) {
+      this.elements.matchSearchTimer.textContent = '00:01';
+    }
+
+    if (this.searchTimerInterval) clearInterval(this.searchTimerInterval);
+    this.searchTimerInterval = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - this.searchStartTime) / 1000);
+      const mm = String(Math.floor(elapsed / 60)).padStart(2, '0');
+      const ss = String(elapsed % 60).padStart(2, '0');
+      if (this.elements.matchSearchTimer) {
+        this.elements.matchSearchTimer.textContent = `${mm}:${ss}`;
+      }
+    }, 1000);
+
+    matchmakingService.startSearch(this.state.playerProfile, (opponent, isHost, roomId, isSimulated = false) => {
+      clearInterval(this.searchTimerInterval);
+      this.elements.matchmakingModal?.classList.remove('visible');
+      this.isSimulatedOnline = isSimulated;
+
+      this.state.setProfiles(
+        this.state.playerProfile,
+        { name: opponent.name, photo: opponent.photo },
+        GAME_MODES.ONLINE
+      );
+
+      this.selectedCard = null;
+      this.isBotProcessing = false;
+      this.state.startNewGame();
+    });
+  }
+
+  cancelMatchmaking() {
+    if (this.searchTimerInterval) clearInterval(this.searchTimerInterval);
+    matchmakingService.cancelSearch();
+    this.elements.matchmakingModal?.classList.remove('visible');
+    this.showLobby();
   }
 
   updateSoundButtonUI() {
     if (!this.elements.btnSoundToggle) return;
     const isEnabled = this.sound.enabled;
     this.elements.btnSoundToggle.innerHTML = isEnabled 
-      ? '<span class="icon">🔊</span> Звук: Вкл' 
-      : '<span class="icon">🔇</span> Звук: Выкл';
+      ? '<span class="icon">🔊</span>' 
+      : '<span class="icon">🔇</span>';
     this.elements.btnSoundToggle.classList.toggle('muted', !isEnabled);
   }
 
-  startNewGame() {
-    this.selectedCard = null;
-    this.isBotProcessing = false;
-    this.state.startNewGame();
-  }
-
   handlePlayerCardClick(card) {
-    // 1. If player is Attacker:
     if (this.state.attacker === PLAYERS.PLAYER) {
       if (Rules.canAttack(card, this.state.tablePairs, this.state.botHand.length)) {
         this.selectedCard = null;
+        if (this.state.gameMode === GAME_MODES.ONLINE && !this.isSimulatedOnline) {
+          matchmakingService.sendGameAction({ type: 'ATTACK', cardId: card.id });
+        }
         this.state.attack(card, PLAYERS.PLAYER);
       }
       return;
     }
 
-    // 2. If player is Defender:
     if (this.state.defender === PLAYERS.PLAYER && !this.state.defenderTaking) {
       const unbittenPairs = [];
       this.state.tablePairs.forEach((pair, idx) => {
@@ -144,17 +338,15 @@ export class UIController {
         }
       });
 
-      if (unbittenPairs.length === 0) {
-        // Cannot defend with this card
-        return;
-      }
+      if (unbittenPairs.length === 0) return;
 
-      // If exactly one pair can be defended, play immediately for snappy gameplay
       if (unbittenPairs.length === 1) {
         this.selectedCard = null;
+        if (this.state.gameMode === GAME_MODES.ONLINE && !this.isSimulatedOnline) {
+          matchmakingService.sendGameAction({ type: 'DEFEND', cardId: card.id, pairIndex: unbittenPairs[0] });
+        }
         this.state.defend(card, unbittenPairs[0], PLAYERS.PLAYER);
       } else {
-        // Toggle selection to let player choose which card to beat on table
         if (this.selectedCard && this.selectedCard.id === card.id) {
           this.selectedCard = null;
         } else {
@@ -166,21 +358,27 @@ export class UIController {
   }
 
   /**
-   * Orchestrates the Bot's artificial intelligence actions
+   * Handles Bot AI moves OR Simulated Online opponent moves
    */
-  async handleBotTurnIfNeeded() {
+  async handleOpponentTurnIfNeeded() {
     if (this.state.gameOver || this.isBotProcessing) return;
 
-    // Case 1: Bot is Attacker
-    if (this.state.attacker === PLAYERS.BOT) {
-      // If table is empty or all cards on table are beaten (or player is taking)
-      const needBotAttack = this.state.tablePairs.length === 0 || 
+    // Only auto-play if mode is BOT OR simulated online
+    if (this.state.gameMode === GAME_MODES.ONLINE && !this.isSimulatedOnline) {
+      return; // Real peer will send action via network
+    }
+
+    const opponentThinkDelay = this.isSimulatedOnline ? 1100 : 750;
+
+    // Case 1: Opponent is Attacker
+    if (this.state.attacker === PLAYERS.OPPONENT) {
+      const needAttack = this.state.tablePairs.length === 0 || 
         Rules.areAllAttacksBeaten(this.state.tablePairs) || 
         this.state.defenderTaking;
 
-      if (needBotAttack) {
+      if (needAttack) {
         this.isBotProcessing = true;
-        await delay(700);
+        await delay(opponentThinkDelay);
 
         if (this.state.gameOver) {
           this.isBotProcessing = false;
@@ -197,23 +395,23 @@ export class UIController {
 
         if (decision.action === 'ATTACK') {
           this.isBotProcessing = false;
-          this.state.attack(decision.card, PLAYERS.BOT);
+          this.state.attack(decision.card, PLAYERS.OPPONENT);
         } else if (decision.action === 'PASS') {
           this.isBotProcessing = false;
-          await this.state.passAttack(PLAYERS.BOT);
+          await this.state.passAttack(PLAYERS.OPPONENT);
         } else {
           this.isBotProcessing = false;
         }
       }
     }
 
-    // Case 2: Bot is Defender
-    else if (this.state.defender === PLAYERS.BOT && !this.state.defenderTaking) {
+    // Case 2: Opponent is Defender
+    else if (this.state.defender === PLAYERS.OPPONENT && !this.state.defenderTaking) {
       const hasUnbitten = this.state.tablePairs.some(p => !p.defense);
 
       if (hasUnbitten) {
         this.isBotProcessing = true;
-        await delay(800);
+        await delay(opponentThinkDelay + 200);
 
         if (this.state.gameOver) {
           this.isBotProcessing = false;
@@ -229,10 +427,10 @@ export class UIController {
 
         if (decision.action === 'DEFEND') {
           this.isBotProcessing = false;
-          this.state.defend(decision.card, decision.targetIndex, PLAYERS.BOT);
+          this.state.defend(decision.card, decision.targetIndex, PLAYERS.OPPONENT);
         } else if (decision.action === 'TAKE') {
           this.isBotProcessing = false;
-          this.state.declareTake(PLAYERS.BOT);
+          this.state.declareTake(PLAYERS.OPPONENT);
         } else {
           this.isBotProcessing = false;
         }
