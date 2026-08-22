@@ -208,4 +208,27 @@ export class SoundEffects {
     osc.start(t);
     osc.stop(t + 0.03);
   }
+
+  playMessage() {
+    if (!this.enabled) return;
+    this.initContext();
+    if (!this.ctx) return;
+
+    const t = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(587.33, t); // D5
+    osc.frequency.setValueAtTime(880, t + 0.07); // A5
+
+    gain.gain.setValueAtTime(0.12, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+
+    osc.start(t);
+    osc.stop(t + 0.2);
+  }
 }

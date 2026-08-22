@@ -17,12 +17,13 @@ export class UIController {
     this.isSimulatedOnline = false;
     this.searchTimerInterval = null;
     this.searchStartTime = 0;
+    this.playerBubbleTimer = null;
+    this.opponentBubbleTimer = null;
 
     this.init();
   }
 
   async init() {
-    // 1. Initialize VK Bridge & User
     const user = await vkService.init();
     await leaderboardService.loadStats(user.id);
 
@@ -37,7 +38,6 @@ export class UIController {
   }
 
   initEvents() {
-    // Sound request from GameState
     this.state.onSoundRequest = (soundName) => {
       if (soundName === 'deal') this.sound.playCardDeal();
       else if (soundName === 'snap') this.sound.playCardSnap();
@@ -45,18 +45,16 @@ export class UIController {
       else if (soundName === 'take') this.sound.playTake();
       else if (soundName === 'win') this.sound.playWin();
       else if (soundName === 'lose') this.sound.playLose();
+      else if (soundName === 'msg') this.sound.playMessage();
     };
 
-    // State change callback -> re-render & check if opponent needs to move
     this.state.onStateChange = async () => {
       this.renderer.render(this.state, this.selectedCard);
       await this.handleOpponentTurnIfNeeded();
     };
 
-    // Game Over hook
     this.state.onGameOver = async (result) => {
       await leaderboardService.recordMatchResult(result, this.state.playerProfile.id);
-      // Show Interstitial Ad upon match end (VK requirement)
       setTimeout(() => {
         vkService.showInterstitialAd();
       }, 1200);
@@ -75,6 +73,8 @@ export class UIController {
         this.state.passAttack(PLAYERS.OPPONENT);
       } else if (action.type === 'TAKE') {
         this.state.declareTake(PLAYERS.OPPONENT);
+      } else if (action.type === 'CHAT_MESSAGE') {
+        this.receiveOpponentMessage(action.text);
       }
     };
 
@@ -99,7 +99,7 @@ export class UIController {
       });
     }
 
-    // Click on Table Pair (to defend with selected card)
+    // Click on Table Pair (to defend)
     if (this.elements.tablePairs) {
       this.elements.tablePairs.addEventListener('click', (e) => {
         const pairEl = e.target.closest('.table-pair');
@@ -149,6 +149,56 @@ export class UIController {
         }
 
         this.state.declareTake(PLAYERS.PLAYER);
+      });
+    }
+
+    // Chat Drawer Toggles
+    const openChat = () => {
+      this.sound.playClick();
+      this.elements.chatDrawer?.classList.add('visible');
+      if (this.elements.chatUnreadBadge) {
+        this.elements.chatUnreadBadge.style.display = 'none';
+      }
+    };
+
+    const closeChat = () => {
+      this.sound.playClick();
+      this.elements.chatDrawer?.classList.remove('visible');
+    };
+
+    this.elements.btnChatToggle?.addEventListener('click', openChat);
+    this.elements.btnQuickChat?.addEventListener('click', openChat);
+    this.elements.btnCloseChat?.addEventListener('click', closeChat);
+
+    // Chat Quick Emojis
+    document.querySelectorAll('.btn-emoji').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const emoji = btn.dataset.emoji;
+        if (emoji) {
+          this.sendChatMessage(emoji);
+        }
+      });
+    });
+
+    // Chat Quick Phrases
+    document.querySelectorAll('.btn-phrase').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const phrase = btn.dataset.phrase;
+        if (phrase) {
+          this.sendChatMessage(phrase);
+        }
+      });
+    });
+
+    // Chat Form Submit
+    if (this.elements.chatForm) {
+      this.elements.chatForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const text = this.elements.chatInput?.value?.trim();
+        if (text) {
+          this.sendChatMessage(text);
+          if (this.elements.chatInput) this.elements.chatInput.value = '';
+        }
       });
     }
 
@@ -243,6 +293,91 @@ export class UIController {
         }
       });
     }
+  }
+
+  sendChatMessage(text) {
+    if (!text) return;
+    this.sound.playMessage();
+
+    // Show Speech Bubble over player avatar
+    this.showSpeechBubble(this.elements.playerSpeechBubble, text, true);
+
+    // Append to chat messages list
+    this.appendChatMessage(this.state.playerProfile.name, text, true);
+
+    // Send via network if online
+    if (this.state.gameMode === GAME_MODES.ONLINE && !this.isSimulatedOnline) {
+      matchmakingService.sendGameAction({ type: 'CHAT_MESSAGE', text });
+    }
+
+    // Bot / simulated opponent response
+    if (this.state.gameMode === GAME_MODES.BOT || this.isSimulatedOnline) {
+      this.scheduleOpponentChatReply(text);
+    }
+  }
+
+  receiveOpponentMessage(text) {
+    this.sound.playMessage();
+    this.showSpeechBubble(this.elements.opponentSpeechBubble, text, false);
+    this.appendChatMessage(this.state.opponentProfile.name, text, false);
+
+    // Show red unread dot if chat drawer is closed
+    if (this.elements.chatDrawer && !this.elements.chatDrawer.classList.contains('visible')) {
+      if (this.elements.chatUnreadBadge) {
+        this.elements.chatUnreadBadge.style.display = 'block';
+      }
+    }
+  }
+
+  showSpeechBubble(container, text, isPlayer) {
+    if (!container) return;
+    container.innerHTML = `<div class="chat-bubble-pop">${text}</div>`;
+
+    if (isPlayer) {
+      if (this.playerBubbleTimer) clearTimeout(this.playerBubbleTimer);
+      this.playerBubbleTimer = setTimeout(() => {
+        container.innerHTML = '';
+      }, 3500);
+    } else {
+      if (this.opponentBubbleTimer) clearTimeout(this.opponentBubbleTimer);
+      this.opponentBubbleTimer = setTimeout(() => {
+        container.innerHTML = '';
+      }, 3500);
+    }
+  }
+
+  appendChatMessage(sender, text, isMy) {
+    if (!this.elements.chatMessagesFeed) return;
+    const row = document.createElement('div');
+    row.className = `chat-msg-row ${isMy ? 'my-msg' : 'opp-msg'}`;
+    row.innerHTML = `
+      <span class="chat-msg-sender">${sender}</span>
+      <span class="chat-msg-text">${text}</span>
+    `;
+    this.elements.chatMessagesFeed.appendChild(row);
+    this.elements.chatMessagesFeed.scrollTop = this.elements.chatMessagesFeed.scrollHeight;
+  }
+
+  scheduleOpponentChatReply(incomingText) {
+    setTimeout(() => {
+      let reply = '👍';
+      if (incomingText.includes('привет') || incomingText.includes('👋')) {
+        reply = 'Привет! Удачи! 🍀';
+      } else if (incomingText.includes('Удачи')) {
+        reply = 'И тебе удачи! 👍';
+      } else if (incomingText.includes('Хороший') || incomingText.includes('👍')) {
+        reply = 'Спасибо! 😎';
+      } else if (incomingText.includes('Бито')) {
+        reply = 'Чисто! 🧹';
+      } else if (incomingText.includes('Спасибо')) {
+        reply = 'Отличная игра! 🤝';
+      } else {
+        const casuals = ['👍', '😎', '🃏', 'Интересно...', 'Хорошая игра!'];
+        reply = casuals[Math.floor(Math.random() * casuals.length)];
+      }
+
+      this.receiveOpponentMessage(reply);
+    }, 1400);
   }
 
   showLobby() {
@@ -357,20 +492,15 @@ export class UIController {
     }
   }
 
-  /**
-   * Handles Bot AI moves OR Simulated Online opponent moves
-   */
   async handleOpponentTurnIfNeeded() {
     if (this.state.gameOver || this.isBotProcessing) return;
 
-    // Only auto-play if mode is BOT OR simulated online
     if (this.state.gameMode === GAME_MODES.ONLINE && !this.isSimulatedOnline) {
-      return; // Real peer will send action via network
+      return;
     }
 
-    const opponentThinkDelay = this.isSimulatedOnline ? 1100 : 750;
+    const opponentThinkDelay = this.isSimulatedOnline ? 1000 : 700;
 
-    // Case 1: Opponent is Attacker
     if (this.state.attacker === PLAYERS.OPPONENT) {
       const needAttack = this.state.tablePairs.length === 0 || 
         Rules.areAllAttacksBeaten(this.state.tablePairs) || 
@@ -403,10 +533,7 @@ export class UIController {
           this.isBotProcessing = false;
         }
       }
-    }
-
-    // Case 2: Opponent is Defender
-    else if (this.state.defender === PLAYERS.OPPONENT && !this.state.defenderTaking) {
+    } else if (this.state.defender === PLAYERS.OPPONENT && !this.state.defenderTaking) {
       const hasUnbitten = this.state.tablePairs.some(p => !p.defense);
 
       if (hasUnbitten) {

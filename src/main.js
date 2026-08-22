@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
     botCardCount: document.getElementById('botCardCount'),
     opponentAvatar: document.getElementById('opponentAvatar'),
     opponentName: document.getElementById('opponentName'),
+    opponentSpeechBubble: document.getElementById('opponentSpeechBubble'),
     deckContainer: document.getElementById('deckContainer'),
     tablePairs: document.getElementById('tablePairs'),
     discardContainer: document.getElementById('discardContainer'),
@@ -17,6 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
     playerCardCount: document.getElementById('playerCardCount'),
     playerAvatar: document.getElementById('playerAvatar'),
     playerName: document.getElementById('playerName'),
+    playerSpeechBubble: document.getElementById('playerSpeechBubble'),
     btnPass: document.getElementById('btnPass'),
     btnTake: document.getElementById('btnTake'),
     btnSoundToggle: document.getElementById('btnSoundToggle'),
@@ -24,6 +26,16 @@ document.addEventListener('DOMContentLoaded', () => {
     btnLobbyMenu: document.getElementById('btnLobbyMenu'),
     gameLog: document.getElementById('gameLog'),
     
+    // In-game Chat
+    btnChatToggle: document.getElementById('btnChatToggle'),
+    btnQuickChat: document.getElementById('btnQuickChat'),
+    chatUnreadBadge: document.getElementById('chatUnreadBadge'),
+    chatDrawer: document.getElementById('chatDrawer'),
+    btnCloseChat: document.getElementById('btnCloseChat'),
+    chatMessagesFeed: document.getElementById('chatMessagesFeed'),
+    chatForm: document.getElementById('chatForm'),
+    chatInput: document.getElementById('chatInput'),
+
     // Modals
     lobbyModal: document.getElementById('lobbyModal'),
     btnModeBot: document.getElementById('btnModeBot'),
