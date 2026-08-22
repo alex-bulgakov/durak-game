@@ -41,13 +41,17 @@ export class CardGenerator {
   /**
    * Get Texture URL according to filename specification:
    * card_БукваНоминала_of_Масть_front_1x.webp
-   * Uses base URL for GitHub Pages / subfolder compatibility
+   * Resolves absolute URL reliably on GitHub Pages, VK iframe, and localhost
    */
   static getTextureUrl(rank, suit) {
     const suitName = suit.toLowerCase();
-    const base = import.meta.env?.BASE_URL || './';
-    const cleanBase = base.endsWith('/') ? base : base + '/';
-    return `${cleanBase}cards/card_${rank}_of_${suitName}_front_1x.webp`;
+    const fileName = `card_${rank}_of_${suitName}_front_1x.webp`;
+
+    if (typeof window !== 'undefined' && window.location) {
+      const cleanPath = window.location.pathname.replace(/\/[^\/]*$/, '/');
+      return `${window.location.origin}${cleanPath}cards/${fileName}`;
+    }
+    return `./cards/${fileName}`;
   }
 
   /**
