@@ -545,11 +545,14 @@ body {
   flex-shrink: 0;
 }
 
-.card-svg {
+.card-svg,
+.card-texture-img {
   width: 100%;
   height: 100%;
   display: block;
   border-radius: var(--card-radius);
+  object-fit: fill;
+  pointer-events: none;
 }
 
 /* Player Cards interactivity */

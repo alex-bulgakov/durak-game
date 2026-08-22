@@ -2,12 +2,15 @@ import { SUITS } from '../utils/helpers.js';
 
 /**
  * Enhanced Classic Card Texture & Graphic Generator
- * Generates traditional "Atlasnaya" / Classic Victorian styled playing cards
- * with linen finish, guilloche ornament backs, and authentic two-way court figures.
+ * Integrates official raster textures from /cards/ for available ranks (J, Q, K, etc.)
+ * and matching vector SVG generation for others.
  */
 export class CardGenerator {
+  // Available textured ranks in /cards/
+  static TEXTURED_RANKS = new Set(['J', 'Q', 'K']);
+
   static getSuitColor(suit) {
-    return (suit === SUITS.HEARTS || suit === SUITS.DIAMONDS) ? '#c1121f' : '#111827';
+    return (suit === SUITS.HEARTS || suit === SUITS.DIAMONDS) ? '#c1121f' : '#1a202c';
   }
 
   static getSuitPath(suit) {
@@ -36,8 +39,16 @@ export class CardGenerator {
   }
 
   /**
-   * Classic Ornamental Backside (Rubashka) Texture
-   * Symmetrical luxury lattice, gold stars & guilloche border
+   * Get Texture URL according to filename specification:
+   * card_БукваНоминала_of_Масть_front_1x.webp
+   */
+  static getTextureUrl(rank, suit) {
+    const suitName = suit.toLowerCase();
+    return `/cards/card_${rank}_of_${suitName}_front_1x.webp`;
+  }
+
+  /**
+   * Classic Symmetrical Card Back
    */
   static generateCardBackSvg() {
     return `
@@ -49,27 +60,27 @@ export class CardGenerator {
             <stop offset="100%" stop-color="#0f172a" />
           </linearGradient>
           <pattern id="classicLattice" width="24" height="24" patternUnits="userSpaceOnUse">
-            <path d="M 0,12 L 12,0 L 24,12 L 12,24 Z" fill="none" stroke="#d97706" stroke-width="0.75" opacity="0.65" />
+            <path d="M 0,12 L 12,0 L 24,12 L 12,24 Z" fill="none" stroke="#cda869" stroke-width="0.8" opacity="0.65" />
             <path d="M 6,6 L 18,18 M 18,6 L 6,18" stroke="#38bdf8" stroke-width="0.5" opacity="0.35" />
             <circle cx="12" cy="12" r="2" fill="#fbbf24" opacity="0.8" />
           </pattern>
         </defs>
 
         <!-- White Card Border -->
-        <rect x="2" y="2" width="196" height="286" rx="14" ry="14" fill="#fdfbf7" stroke="#cbd5e1" stroke-width="1.8" />
+        <rect x="2" y="2" width="196" height="286" rx="14" ry="14" fill="#fcf8ee" stroke="#cda869" stroke-width="1.8" />
         
         <!-- Outer Blue Margin -->
-        <rect x="8" y="8" width="184" height="274" rx="10" ry="10" fill="url(#backGrad)" />
+        <rect x="7" y="7" width="186" height="276" rx="10" ry="10" fill="url(#backGrad)" />
 
         <!-- Double Gold Filigree Border -->
-        <rect x="13" y="13" width="174" height="264" rx="8" ry="8" fill="none" stroke="#f59e0b" stroke-width="1.5" opacity="0.8" />
-        <rect x="17" y="17" width="166" height="256" rx="6" ry="6" fill="url(#classicLattice)" stroke="#f59e0b" stroke-width="0.8" />
+        <rect x="12" y="12" width="176" height="266" rx="8" ry="8" fill="none" stroke="#cda869" stroke-width="1.5" opacity="0.85" />
+        <rect x="16" y="16" width="168" height="258" rx="6" ry="6" fill="url(#classicLattice)" stroke="#cda869" stroke-width="0.8" />
 
         <!-- Symmetrical Center Medallion -->
         <g transform="translate(100, 145)">
-          <circle cx="0" cy="0" r="34" fill="#0f172a" stroke="#f59e0b" stroke-width="2" />
+          <circle cx="0" cy="0" r="34" fill="#0f172a" stroke="#cda869" stroke-width="2" />
           <circle cx="0" cy="0" r="28" fill="none" stroke="#fbbf24" stroke-width="1" stroke-dasharray="3,2" />
-          <circle cx="0" cy="0" r="22" fill="#1e293b" stroke="#f59e0b" stroke-width="0.8" />
+          <circle cx="0" cy="0" r="22" fill="#1e293b" stroke="#cda869" stroke-width="0.8" />
           
           <!-- 4 Classic Suit Emblems in Center -->
           <g transform="translate(0, -12) scale(0.18)"><path d="${this.getSuitPath(SUITS.HEARTS)}" fill="#ef4444" transform="translate(-50, -50)" /></g>
@@ -82,24 +93,68 @@ export class CardGenerator {
   }
 
   /**
-   * Generates Center Artwork for Ranks (6..A)
+   * Generates Complete Classic Card Face
    */
+  static generateCardFaceSvg(rank, suit) {
+    // If we have an official texture webp file for this rank
+    if (this.TEXTURED_RANKS.has(rank)) {
+      const textureUrl = this.getTextureUrl(rank, suit);
+      return `<img src="${textureUrl}" alt="${rank} ${suit}" class="card-svg card-face card-texture-img" draggable="false" />`;
+    }
+
+    const color = this.getSuitColor(suit);
+    const suitPath = this.getSuitPath(suit);
+    const centerArt = this.getCenterArt(rank, suit, color);
+
+    return `
+      <svg class="card-svg card-face" viewBox="0 0 200 290" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="cardLinenBg-${rank}-${suit}" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#ffffff" />
+            <stop offset="60%" stop-color="#fcf8ee" />
+            <stop offset="100%" stop-color="#f8f4e6" />
+          </linearGradient>
+        </defs>
+
+        <!-- Card Body with Rounded Edges & Gold Frame matching textures -->
+        <rect x="2" y="2" width="196" height="286" rx="14" ry="14" fill="url(#cardLinenBg-${rank}-${suit})" stroke="#cda869" stroke-width="1.8" />
+        
+        <!-- Classic Fine Inner Gold Guilloche Border -->
+        <rect x="6" y="6" width="188" height="278" rx="10" ry="10" fill="none" stroke="#e2e8f0" stroke-width="0.8" />
+        <rect x="9" y="9" width="182" height="272" rx="8" ry="8" fill="none" stroke="#cda869" stroke-width="0.8" stroke-opacity="0.6" />
+
+        <!-- Top-Left Corner Index (Rank + Suit) -->
+        <g class="card-index top-left" transform="translate(12, 12)">
+          <text x="10" y="24" font-family="'Cinzel', 'Playfair Display', 'Times New Roman', Georgia, serif" font-size="26" font-weight="900" fill="${color}" text-anchor="middle">${rank}</text>
+          <g transform="translate(1, 30) scale(0.18)">
+            <path d="${suitPath}" fill="${color}" />
+          </g>
+        </g>
+
+        <!-- Center Art / Pips -->
+        ${centerArt}
+
+        <!-- Bottom-Right Inverted Index -->
+        <g class="card-index bottom-right" transform="translate(188, 278) rotate(180)">
+          <text x="10" y="24" font-family="'Cinzel', 'Playfair Display', 'Times New Roman', Georgia, serif" font-size="26" font-weight="900" fill="${color}" text-anchor="middle">${rank}</text>
+          <g transform="translate(1, 30) scale(0.18)">
+            <path d="${suitPath}" fill="${color}" />
+          </g>
+        </g>
+      </svg>
+    `;
+  }
+
   static getCenterArt(rank, suit, color) {
     const suitPath = this.getSuitPath(suit);
 
-    // ACE: Classic Masterpiece Ornamental Suit Center
     if (rank === 'A') {
       return `
         <g class="card-center-art">
-          <!-- Fine Engraved Concentric Radiance -->
           <circle cx="100" cy="145" r="54" fill="none" stroke="${color}" stroke-width="1" opacity="0.2" />
           <circle cx="100" cy="145" r="48" fill="none" stroke="${color}" stroke-width="0.6" stroke-dasharray="4,3" opacity="0.3" />
           <circle cx="100" cy="145" r="42" fill="none" stroke="${color}" stroke-width="1.2" opacity="0.25" />
-          
-          <!-- Floral filigree branches around Ace -->
           <path d="M 55,145 C 55,115 80,105 100,105 C 120,105 145,115 145,145 C 145,175 120,185 100,185 C 80,185 55,175 55,145 Z" fill="none" stroke="${color}" stroke-width="0.8" opacity="0.35" />
-          
-          <!-- Large Center Suit -->
           <g transform="translate(62, 107) scale(0.76)">
             <path d="${suitPath}" fill="${color}" filter="drop-shadow(0 3px 4px rgba(0,0,0,0.18))" />
           </g>
@@ -107,75 +162,9 @@ export class CardGenerator {
       `;
     }
 
-    // COURT CARDS (K, Q, J): Two-Way Symmetrical Classic Figures
-    if (rank === 'K' || rank === 'Q' || rank === 'J') {
-      return this.generateCourtFigure(rank, suit, color, suitPath);
-    }
-
-    // NUMBER CARDS (6, 7, 8, 9, 10)
     return this.generateNumberPips(rank, suitPath, color);
   }
 
-  /**
-   * Two-Way Symmetrical Classic Court Figures (King, Queen, Jack)
-   */
-  static generateCourtFigure(rank, suit, color, suitPath) {
-    const isKing = rank === 'K';
-    const isQueen = rank === 'Q';
-    const title = isKing ? 'КОРОЛЬ' : (isQueen ? 'ДАМА' : 'ВАЛЕТ');
-
-    const crownOrHeaddress = isKing
-      ? `<path d="M 32,26 L 40,12 L 50,20 L 60,12 L 68,26 Z" fill="#f59e0b" stroke="#b45309" stroke-width="1.2" />`
-      : isQueen
-      ? `<path d="M 34,25 C 40,14 60,14 66,25 Z" fill="#f59e0b" stroke="#b45309" stroke-width="1.2" /><circle cx="50" cy="14" r="3" fill="#ef4444" />`
-      : `<path d="M 36,25 L 50,14 L 64,25 Z" fill="#3b82f6" stroke="#1d4ed8" stroke-width="1.2" /><path d="M 50,14 L 62,6" stroke="#ef4444" stroke-width="2" stroke-linecap="round" />`;
-
-    const halfFigure = `
-      <g class="court-half">
-        <!-- Royal Robe / Torso -->
-        <path d="M 24,78 C 24,42 76,42 76,78 Z" fill="${color}" opacity="0.88" />
-        <!-- Ermine Collar / Lapel -->
-        <path d="M 36,78 L 50,48 L 64,78 Z" fill="#fdfbf7" stroke="#cbd5e1" stroke-width="1" />
-        <circle cx="50" cy="62" r="2.5" fill="#f59e0b" />
-        <!-- Royal Head & Beard/Hair -->
-        <circle cx="50" cy="35" r="13" fill="#fde68a" stroke="#d97706" stroke-width="1" />
-        ${crownOrHeaddress}
-        <!-- Scepter / Mini Suit in Hand -->
-        <g transform="translate(66, 44) scale(0.18)">
-          <path d="${suitPath}" fill="${color}" />
-        </g>
-      </g>
-    `;
-
-    return `
-      <g class="card-court-container" transform="translate(38, 52)">
-        <!-- Court Picture Frame -->
-        <rect x="0" y="0" width="124" height="186" rx="6" ry="6" fill="#fdfbf7" stroke="${color}" stroke-width="1.5" stroke-opacity="0.4" />
-        <rect x="3" y="3" width="118" height="180" rx="4" ry="4" fill="none" stroke="#e2e8f0" stroke-width="0.8" />
-        
-        <!-- Top Half Figure -->
-        <g transform="translate(12, 10)">
-          ${halfFigure}
-        </g>
-
-        <!-- Dividing Center Banner -->
-        <g transform="translate(0, 93)">
-          <line x1="0" y1="0" x2="124" y2="0" stroke="${color}" stroke-width="1.2" stroke-opacity="0.5" />
-          <rect x="22" y="-9" width="80" height="18" rx="4" ry="4" fill="#ffffff" stroke="${color}" stroke-width="1" />
-          <text x="62" y="4" text-anchor="middle" font-family="'Cinzel', 'Times New Roman', Georgia, serif" font-size="10" font-weight="bold" fill="${color}" letter-spacing="1.5">${title}</text>
-        </g>
-
-        <!-- Bottom Half Inverted Figure (Classic Double-Headed) -->
-        <g transform="translate(112, 176) rotate(180)">
-          ${halfFigure}
-        </g>
-      </g>
-    `;
-  }
-
-  /**
-   * Pips Grid Generator for 6, 7, 8, 9, 10
-   */
   static generateNumberPips(rank, suitPath, color) {
     const pips = [];
     const makePip = (x, y, flip = false, scale = 0.28) => {
@@ -238,52 +227,5 @@ export class CardGenerator {
     }
 
     return `<g class="card-pips">${pips.join('')}</g>`;
-  }
-
-  /**
-   * Generates Complete Classic Card Face
-   */
-  static generateCardFaceSvg(rank, suit) {
-    const color = this.getSuitColor(suit);
-    const suitPath = this.getSuitPath(suit);
-    const centerArt = this.getCenterArt(rank, suit, color);
-
-    return `
-      <svg class="card-svg card-face" viewBox="0 0 200 290" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <linearGradient id="cardLinenBg-${rank}-${suit}" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stop-color="#ffffff" />
-            <stop offset="60%" stop-color="#fdfbf7" />
-            <stop offset="100%" stop-color="#f8f6f0" />
-          </linearGradient>
-        </defs>
-
-        <!-- Card Body with Rounded Edges -->
-        <rect x="2" y="2" width="196" height="286" rx="14" ry="14" fill="url(#cardLinenBg-${rank}-${suit})" stroke="#cbd5e1" stroke-width="1.8" />
-        
-        <!-- Classic Fine Inner Guilloche Border -->
-        <rect x="7" y="7" width="186" height="276" rx="10" ry="10" fill="none" stroke="#e2e8f0" stroke-width="0.8" />
-        <rect x="10" y="10" width="180" height="270" rx="8" ry="8" fill="none" stroke="${color}" stroke-width="0.4" stroke-opacity="0.3" />
-
-        <!-- Top-Left Corner Index (Rank + Suit) -->
-        <g class="card-index top-left" transform="translate(12, 12)">
-          <text x="10" y="24" font-family="'Cinzel', 'Times New Roman', Georgia, serif" font-size="25" font-weight="900" fill="${color}" text-anchor="middle">${rank}</text>
-          <g transform="translate(1, 30) scale(0.18)">
-            <path d="${suitPath}" fill="${color}" />
-          </g>
-        </g>
-
-        <!-- Center Art / Court / Pips -->
-        ${centerArt}
-
-        <!-- Bottom-Right Inverted Index -->
-        <g class="card-index bottom-right" transform="translate(188, 278) rotate(180)">
-          <text x="10" y="24" font-family="'Cinzel', 'Times New Roman', Georgia, serif" font-size="25" font-weight="900" fill="${color}" text-anchor="middle">${rank}</text>
-          <g transform="translate(1, 30) scale(0.18)">
-            <path d="${suitPath}" fill="${color}" />
-          </g>
-        </g>
-      </svg>
-    `;
   }
 }
