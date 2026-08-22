@@ -1,0 +1,140 @@
+<svg width="576" height="576" viewBox="0 0 576 576" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Background Felt Gradient -->
+    <radialGradient id="feltBg" cx="50%" cy="45%" r="65%">
+      <stop offset="0%" stop-color="#1e6b3f" />
+      <stop offset="55%" stop-color="#0f3d24" />
+      <stop offset="100%" stop-color="#061d10" />
+    </radialGradient>
+
+    <!-- Metallic Gold Gradient -->
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fffbeb" />
+      <stop offset="25%" stop-color="#fde68a" />
+      <stop offset="50%" stop-color="#f59e0b" />
+      <stop offset="75%" stop-color="#d97706" />
+      <stop offset="100%" stop-color="#78350f" />
+    </linearGradient>
+
+    <linearGradient id="goldPlate" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#fef3c7" />
+      <stop offset="40%" stop-color="#f59e0b" />
+      <stop offset="70%" stop-color="#d97706" />
+      <stop offset="100%" stop-color="#451a03" />
+    </linearGradient>
+
+    <!-- Card Gradients -->
+    <linearGradient id="cardBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="70%" stop-color="#fcf8ee" />
+      <stop offset="100%" stop-color="#f5eedc" />
+    </linearGradient>
+
+    <!-- Soft Drop Shadows -->
+    <filter id="cardShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="16" stdDeviation="14" flood-color="#000000" flood-opacity="0.65" />
+    </filter>
+
+    <filter id="goldGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="0" stdDeviation="8" flood-color="#f59e0b" flood-opacity="0.8" />
+    </filter>
+
+    <filter id="titleShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="8" flood-color="#000000" flood-opacity="0.85" />
+    </filter>
+
+    <!-- Suit Paths -->
+    <path id="suitHeart" d="M 50,28 C 50,28 38,12 22,12 C 9,12 0,24 0,42 C 0,64 26,81 50,100 C 74,81 100,64 100,42 C 100,24 91,12 78,12 C 62,12 50,28 50,28 Z" />
+    <path id="suitSpade" d="M 50,8 C 36,27 12,38 12,62 C 12,76 24,86 37,83 C 43,82 47,76 48,71 L 43,96 L 57,96 L 52,71 C 53,76 57,82 63,83 C 76,86 88,76 88,62 C 88,38 64,27 50,8 Z" />
+    <path id="suitDiamond" d="M 50,4 L 92,50 L 50,96 L 8,50 Z" />
+    <path id="suitClub" d="M 50,40 C 59,40 67,33 67,24 C 67,14 58,6 50,6 C 42,6 33,14 33,24 C 33,33 41,40 50,40 M 27,66 C 36,66 44,58 44,49 C 44,40 35,32 25,32 C 15,32 8,40 8,49 C 8,58 16,66 27,66 M 73,66 C 82,66 90,58 90,49 C 90,40 81,32 71,32 C 61,32 54,40 54,49 C 54,58 62,66 73,66 M 45,58 L 41,96 L 59,96 L 55,58 Z" />
+  </defs>
+
+  <!-- Base Icon Frame (Rounded Square for App Stores) -->
+  <rect width="576" height="576" rx="112" fill="url(#feltBg)" />
+
+  <!-- Outer Luxury Gold Border -->
+  <rect x="14" y="14" width="548" height="548" rx="100" fill="none" stroke="url(#goldGrad)" stroke-width="8" />
+  <rect x="26" y="26" width="524" height="524" rx="90" fill="none" stroke="url(#goldGrad)" stroke-width="2" opacity="0.6" stroke-dasharray="6,4" />
+
+  <!-- Corner Flourishes -->
+  <g fill="url(#goldGrad)">
+    <circle cx="56" cy="56" r="6" />
+    <circle cx="520" cy="56" r="6" />
+    <circle cx="56" cy="520" r="6" />
+    <circle cx="520" cy="520" r="6" />
+  </g>
+
+  <!-- Crown Top Emblem -->
+  <g transform="translate(288, 86) scale(0.65)" filter="url(#goldGlow)">
+    <path d="M -70,25 L -60,-35 L -18,0 L 0,-50 L 18,0 L 60,-35 L 70,25 Z" fill="url(#goldPlate)" stroke="#451a03" stroke-width="3" />
+    <rect x="-65" y="25" width="130" height="14" rx="6" fill="url(#goldGrad)" stroke="#451a03" stroke-width="2" />
+    <!-- Crown Jewels -->
+    <circle cx="0" cy="-50" r="6" fill="#ef4444" stroke="#ffffff" stroke-width="1.5" />
+    <circle cx="-60" cy="-35" r="5" fill="#3b82f6" stroke="#ffffff" stroke-width="1.5" />
+    <circle cx="60" cy="-35" r="5" fill="#3b82f6" stroke="#ffffff" stroke-width="1.5" />
+    <circle cx="-30" cy="32" r="4" fill="#ef4444" />
+    <circle cx="0" cy="32" r="5" fill="#10b981" />
+    <circle cx="30" cy="32" r="4" fill="#ef4444" />
+  </g>
+
+  <!-- Center Card Fan Group -->
+  <g transform="translate(288, 280)">
+    <!-- 1. Left Card: Ace of Hearts (Rotated -16 deg) -->
+    <g transform="translate(-65, 10) rotate(-16)" filter="url(#cardShadow)">
+      <rect x="-80" y="-120" width="160" height="240" rx="14" fill="url(#cardBg)" stroke="#cda869" stroke-width="2.5" />
+      <rect x="-74" y="-114" width="148" height="228" rx="10" fill="none" stroke="#f59e0b" stroke-width="0.8" opacity="0.5" />
+      <!-- Rank & Suit Corner -->
+      <text x="-62" y="-90" font-family="'Cinzel', 'Times New Roman', Georgia, serif" font-size="28" font-weight="900" fill="#dc2626">A</text>
+      <g transform="translate(-71, -85) scale(0.18)"><use href="#suitHeart" fill="#dc2626" /></g>
+      <!-- Center Large Pip -->
+      <g transform="translate(-32, -32) scale(0.64)"><use href="#suitHeart" fill="#dc2626" filter="drop-shadow(0 4px 6px rgba(0,0,0,0.2))" /></g>
+    </g>
+
+    <!-- 2. Right Card: Ace of Diamonds (Rotated +16 deg) -->
+    <g transform="translate(65, 10) rotate(16)" filter="url(#cardShadow)">
+      <rect x="-80" y="-120" width="160" height="240" rx="14" fill="url(#cardBg)" stroke="#cda869" stroke-width="2.5" />
+      <rect x="-74" y="-114" width="148" height="228" rx="10" fill="none" stroke="#f59e0b" stroke-width="0.8" opacity="0.5" />
+      <!-- Rank & Suit Corner -->
+      <text x="-62" y="-90" font-family="'Cinzel', 'Times New Roman', Georgia, serif" font-size="28" font-weight="900" fill="#dc2626">A</text>
+      <g transform="translate(-71, -85) scale(0.18)"><use href="#suitDiamond" fill="#dc2626" /></g>
+      <!-- Center Large Pip -->
+      <g transform="translate(-32, -32) scale(0.64)"><use href="#suitDiamond" fill="#dc2626" filter="drop-shadow(0 4px 6px rgba(0,0,0,0.2))" /></g>
+    </g>
+
+    <!-- 3. Center Front Card: Ace of Spades (Master Trump, Straight, Highlighted) -->
+    <g transform="translate(0, -15)" filter="url(#cardShadow)">
+      <rect x="-86" y="-128" width="172" height="256" rx="16" fill="url(#cardBg)" stroke="url(#goldGrad)" stroke-width="4" />
+      <rect x="-79" y="-121" width="158" height="242" rx="11" fill="none" stroke="#f59e0b" stroke-width="1.2" opacity="0.7" />
+      <!-- Gold Corner Index -->
+      <text x="-68" y="-96" font-family="'Cinzel', 'Times New Roman', Georgia, serif" font-size="30" font-weight="900" fill="#0f172a">A</text>
+      <g transform="translate(-77, -90) scale(0.2)"><use href="#suitSpade" fill="#0f172a" /></g>
+      <!-- Center Ace of Spades Ornate Artwork -->
+      <circle cx="0" cy="0" r="44" fill="none" stroke="url(#goldGrad)" stroke-width="2" />
+      <circle cx="0" cy="0" r="38" fill="none" stroke="#f59e0b" stroke-width="0.8" stroke-dasharray="3,2" />
+      <g transform="translate(-36, -38) scale(0.72)"><use href="#suitSpade" fill="#0f172a" filter="drop-shadow(0 6px 8px rgba(0,0,0,0.25))" /></g>
+    </g>
+  </g>
+
+  <!-- 4 Suit Accents on Sides -->
+  <g transform="translate(70, 260) scale(0.35)" filter="url(#goldGlow)"><use href="#suitClub" fill="url(#goldGrad)" /></g>
+  <g transform="translate(470, 260) scale(0.35)" filter="url(#goldGlow)"><use href="#suitDiamond" fill="url(#goldGrad)" /></g>
+
+  <!-- Bottom Title Ribbon / Banner -->
+  <g transform="translate(288, 475)" filter="url(#titleShadow)">
+    <!-- Ribbon Base Plate -->
+    <rect x="-190" y="-38" width="380" height="76" rx="20" fill="#0f172a" stroke="url(#goldGrad)" stroke-width="4" />
+    <rect x="-182" y="-30" width="364" height="60" rx="14" fill="none" stroke="#fde68a" stroke-width="1.2" opacity="0.6" />
+    
+    <!-- Title Text: ДУРАК -->
+    <text x="0" y="16" 
+          font-family="'Cinzel', 'Playfair Display', 'Arial Black', sans-serif" 
+          font-size="46" 
+          font-weight="900" 
+          letter-spacing="6" 
+          fill="url(#goldGrad)" 
+          text-anchor="middle"
+          stroke="#451a03"
+          stroke-width="1.5">ДУРАК</text>
+  </g>
+</svg>
